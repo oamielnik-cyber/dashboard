@@ -1,0 +1,2817 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Dashboard — Aleksander</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-2: #1c1c1c;
+  --border: #2a2a2a;
+  --text: #ededed;
+  --text-dim: #888;
+  --text-faint: #555;
+  --accent: #ff6a00;
+  --accent-2: #ffb84d;
+  --green: #4ade80;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --yellow: #fbbf24;
+  --purple: #a78bfa;
+  --radius: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; font-size: 15px; line-height: 1.45; }
+body { padding-bottom: 80px; max-width: 1100px; margin: 0 auto; }
+
+/* HEADER */
+.app-header { padding: 18px 16px 8px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg); z-index: 50; }
+.app-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.app-header .subtitle { color: var(--text-dim); font-size: 12px; margin-top: 2px; }
+.sync-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); }
+.sync-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.sync-dot.local { background: var(--yellow); }
+.sync-dot.error { background: var(--red); }
+
+/* TABS */
+.tabs { display: flex; gap: 4px; padding: 4px 16px 12px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); background: var(--surface); font-size: 13px; cursor: pointer; white-space: nowrap; transition: all .15s; user-select: none; }
+.tab.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+.tab:hover:not(.active) { color: var(--text); border-color: #3a3a3a; }
+
+/* CARDS */
+.grid { display: grid; gap: 12px; padding: 0 16px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .grid { grid-template-columns: 1fr 1fr; } .grid-full { grid-column: 1 / -1; } }
+@media (min-width: 1000px) { .grid { grid-template-columns: 1fr 1fr 1fr; } .grid-full { grid-column: 1 / -1; } .grid-wide { grid-column: span 2; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+.card h2 .badge { font-size: 10px; padding: 2px 6px; background: var(--surface-2); border-radius: 4px; color: var(--text); letter-spacing: 0; text-transform: none; }
+.tab-section { display: none; }
+.tab-section.active { display: block; }
+
+/* METRICS */
+.metric { display: flex; align-items: baseline; gap: 8px; }
+.metric .value { font-size: 28px; font-weight: 700; letter-spacing: -1px; }
+.metric .unit { color: var(--text-dim); font-size: 14px; }
+.metric .delta { font-size: 12px; padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+.delta.pos { background: rgba(74,222,128,.15); color: var(--green); }
+.delta.neg { background: rgba(248,113,113,.15); color: var(--red); }
+.delta.zero { background: var(--surface-2); color: var(--text-dim); }
+
+/* PROGRESS BAR */
+.progress { background: var(--surface-2); border-radius: 6px; height: 8px; overflow: hidden; margin-top: 8px; position: relative; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .4s ease; }
+.progress.green .progress-fill { background: var(--green); }
+.progress.blue .progress-fill { background: var(--blue); }
+.progress.purple .progress-fill { background: var(--purple); }
+.progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+/* GOALS LIST */
+.goal-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.goal-row:last-child { border-bottom: none; }
+.goal-row .name { font-size: 13px; font-weight: 500; }
+.goal-row .target { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.goal-row .current { font-size: 12px; color: var(--text); text-align: right; font-weight: 600; }
+.goal-row .progress { grid-column: 1 / -1; }
+
+/* INPUTS */
+input, select, textarea, button { font-family: inherit; font-size: 14px; }
+input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 9px 11px; border-radius: 8px; width: 100%; outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.btn { background: var(--accent); color: #000; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.btn:hover { filter: brightness(1.1); }
+.btn:active { transform: scale(.97); }
+.btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.btn-sm { padding: 6px 10px; font-size: 12px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.field label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* TODAY CARD */
+.today-hero { background: linear-gradient(135deg, #1f1209, #0f0805); border: 1px solid var(--accent); padding: 20px; border-radius: var(--radius); }
+.today-hero .day-name { font-size: 13px; color: var(--accent-2); text-transform: uppercase; letter-spacing: 1px; }
+.today-hero .activity { font-size: 26px; font-weight: 700; margin-top: 6px; }
+.today-hero .detail { color: var(--text-dim); margin-top: 4px; font-size: 14px; }
+
+/* MEAL LIST */
+.meal-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; margin: 8px 0; }
+.meal-item { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; padding: 8px 10px; background: var(--surface-2); border-radius: 8px; font-size: 13px; align-items: center; }
+.meal-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meal-item .vals { color: var(--text-dim); font-size: 11px; font-variant-numeric: tabular-nums; }
+.meal-item .del { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 16px; padding: 2px 4px; }
+.meal-item .del:hover { color: var(--red); }
+
+/* MACRO RING */
+.macro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.macro-item { background: var(--surface-2); padding: 12px; border-radius: 10px; }
+.macro-item .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
+.macro-item .nums { font-size: 18px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.macro-item .of { color: var(--text-dim); font-size: 12px; font-weight: 400; }
+
+/* WORKOUT */
+.exercise { background: var(--surface-2); padding: 12px; border-radius: 10px; margin-bottom: 8px; }
+.exercise.fundament { border: 1px solid var(--accent); }
+.ex-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ex-name { font-weight: 600; font-size: 14px; }
+.ex-target { font-size: 11px; color: var(--text-dim); }
+.sets { display: flex; flex-direction: column; gap: 6px; }
+.set-row { display: grid; grid-template-columns: 28px 1fr 1fr; gap: 6px; align-items: center; }
+.set-row .set-num { font-size: 11px; color: var(--text-dim); text-align: center; font-weight: 600; }
+.set-row .set-cell { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }
+.set-row .set-cell input { background: transparent; border: none; padding: 4px 2px; width: 100%; text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; outline: none; color: var(--text); }
+.set-row .set-cell .unit { font-size: 10px; color: var(--text-faint); flex-shrink: 0; }
+.set-row.done .set-cell { background: rgba(74,222,128,.1); border-color: var(--green); }
+.set-row.done .set-cell input { color: var(--green); }
+.weight-input { width: 70px; }
+.sets-head { display: grid; grid-template-columns: 28px 1fr 1fr; gap: 6px; font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .5px; padding: 0 8px; margin-bottom: 4px; }
+.sets-head span { text-align: center; }
+.sets-head span:first-child { text-align: left; }
+.bw-only .set-row { grid-template-columns: 28px 1fr; }
+.bw-only .sets-head { grid-template-columns: 28px 1fr; }
+
+/* HABITS */
+.habit-grid { display: grid; gap: 8px; }
+.habit-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px; background: var(--surface-2); border-radius: 8px; }
+.habit-row .label { font-size: 13px; }
+.habit-row .streak { font-size: 11px; color: var(--accent-2); }
+.checkbox { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center; }
+.checkbox.checked { background: var(--green); border-color: var(--green); }
+.checkbox.checked::after { content: "✓"; color: #000; font-weight: 700; }
+
+/* PISTOL TIMELINE */
+.pistol-timeline { display: flex; gap: 4px; margin-top: 8px; }
+.pistol-week { flex: 1; padding: 8px 4px; text-align: center; background: var(--surface-2); border-radius: 6px; font-size: 10px; opacity: .5; }
+.pistol-week.done { background: var(--green); color: #000; opacity: 1; }
+.pistol-week.current { background: var(--accent); color: #000; opacity: 1; font-weight: 700; }
+.pistol-week .num { font-size: 14px; font-weight: 700; display: block; }
+
+/* CHART */
+canvas.spark { width: 100%; height: 60px; display: block; margin-top: 8px; }
+
+/* STUDIES */
+.exam-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+.exam-item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; padding: 10px; background: var(--surface-2); border-radius: 8px; font-size: 13px; align-items: center; }
+.exam-item .countdown { background: var(--bg); padding: 4px 8px; border-radius: 6px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 40px; text-align: center; }
+.exam-item .countdown.urgent { background: var(--red); color: #000; }
+.exam-item .countdown.soon { background: var(--accent); color: #000; }
+.exam-item .name { font-weight: 600; }
+.exam-item .meta { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+.exam-item .del { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 16px; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+.modal h3 { margin-bottom: 16px; }
+.modal-close { float: right; background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer; line-height: 1; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); padding: 10px 16px; border-radius: 8px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.toast.success { border-color: var(--green); }
+.toast.error { border-color: var(--red); }
+
+/* SETTINGS MODAL */
+.config-block { background: var(--surface-2); padding: 12px; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; }
+.note { background: rgba(255,184,77,.1); border-left: 3px solid var(--accent); padding: 10px 12px; border-radius: 4px; font-size: 12px; color: var(--text); margin: 10px 0; }
+
+/* WEEK CYCLE */
+.week-cycle { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+.cycle-week { padding: 10px 4px; background: var(--surface-2); border-radius: 8px; text-align: center; font-size: 11px; opacity: .5; }
+.cycle-week.current { opacity: 1; background: var(--accent); color: #000; font-weight: 700; }
+.cycle-week .label { font-size: 10px; display: block; }
+.cycle-week .name { font-size: 13px; font-weight: 600; display: block; margin-top: 2px; }
+
+/* EMPTY STATE */
+.empty { text-align: center; padding: 24px 12px; color: var(--text-dim); font-size: 13px; }
+.empty button { margin-top: 12px; }
+
+/* FAB */
+.fab { position: fixed; right: 16px; bottom: 16px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #000; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 4px 16px rgba(255,106,0,.4); z-index: 60; }
+
+/* SUBJECTS */
+.subject-card { background: var(--surface-2); border-radius: 10px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all .15s; border: 1px solid transparent; }
+.subject-card:hover { border-color: var(--border); }
+.subject-card.passed { border-color: var(--green); background: rgba(74,222,128,.06); }
+.subject-card.failed { border-color: var(--red); background: rgba(248,113,113,.06); }
+.subject-card.in-progress { border-color: var(--accent); }
+.subj-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
+.subj-name { font-weight: 600; font-size: 14px; }
+.subj-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; display: flex; gap: 8px; }
+.subj-meta .tag { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+.subj-grade { font-size: 18px; font-weight: 700; min-width: 36px; text-align: center; font-variant-numeric: tabular-nums; }
+.subj-grade.set { color: var(--green); }
+.subj-grade.fail { color: var(--red); }
+.subj-grade.empty { color: var(--text-faint); font-weight: 400; font-size: 13px; }
+.subj-progress-mini { display: flex; gap: 2px; margin-top: 8px; height: 4px; }
+.subj-progress-mini div { flex: 1; background: var(--border); border-radius: 2px; }
+.subj-progress-mini div.has { background: var(--accent); }
+.subj-progress-mini div.pass { background: var(--green); }
+.subj-progress-mini div.fail { background: var(--red); }
+
+.gpa-big { font-size: 38px; font-weight: 700; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; }
+.gpa-card-mini { background: var(--surface-2); padding: 10px 12px; border-radius: 8px; text-align: center; }
+.gpa-card-mini .label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+.gpa-card-mini .val { font-size: 18px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+.grade-pill { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums; }
+.grade-2 { background: rgba(248,113,113,.15); color: var(--red); }
+.grade-3, .grade-3-5 { background: rgba(255,184,77,.15); color: var(--accent-2); }
+.grade-4, .grade-4-5 { background: rgba(96,165,250,.15); color: var(--blue); }
+.grade-5 { background: rgba(74,222,128,.15); color: var(--green); }
+
+.component-list { display: flex; flex-direction: column; gap: 4px; }
+.component-row { display: grid; grid-template-columns: 1fr 90px 70px auto; gap: 6px; align-items: center; padding: 8px; background: var(--bg); border-radius: 6px; }
+.component-row input, .component-row select { padding: 6px 8px; font-size: 13px; }
+
+.calc-box { background: rgba(255,106,0,.06); border: 1px solid rgba(255,106,0,.3); border-radius: 10px; padding: 14px; margin-top: 10px; }
+.calc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+.calc-result { background: var(--surface-2); padding: 10px; border-radius: 8px; margin-top: 8px; font-size: 13px; line-height: 1.5; }
+
+/* SKILLS */
+.skill-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.skill-filter { padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); color: var(--text-dim); font-size: 12px; cursor: pointer; user-select: none; }
+.skill-filter.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.skill-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+.skill-stat { background: var(--surface-2); padding: 10px 8px; border-radius: 10px; text-align: center; }
+.skill-stat .num { font-size: 20px; font-weight: 700; }
+.skill-stat .lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+.skill-cat { margin-bottom: 18px; }
+.skill-cat-head { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-left: 4px; display: flex; justify-content: space-between; }
+.skill-list-grid { display: grid; gap: 6px; }
+.skill-card { background: var(--surface-2); border-radius: 10px; padding: 12px; cursor: pointer; transition: all .15s; border: 1px solid transparent; }
+.skill-card:hover { border-color: var(--border); }
+.skill-card.s-mastered { border-color: var(--green); background: rgba(74,222,128,.08); }
+.skill-card.s-known { border-color: var(--blue); }
+.skill-card.s-training { border-color: var(--accent); }
+.skill-card.s-locked { opacity: .55; }
+.skill-card-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.skill-icon { font-size: 22px; width: 36px; text-align: center; }
+.skill-name { font-weight: 600; font-size: 14px; }
+.skill-progress-line { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.skill-status-pill { font-size: 10px; padding: 3px 8px; border-radius: 999px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.pill-locked { background: var(--surface); color: var(--text-faint); }
+.pill-training { background: rgba(255,106,0,.2); color: var(--accent-2); }
+.pill-known { background: rgba(96,165,250,.2); color: var(--blue); }
+.pill-mastered { background: rgba(74,222,128,.2); color: var(--green); }
+
+/* SKILL DETAIL MODAL */
+.skill-modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+.skill-modal h3 { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 20px; }
+.skill-modal .cat-tag { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.skill-modal-section { margin: 14px 0; }
+.skill-modal-section h4 { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.progression-list { display: flex; flex-direction: column; gap: 4px; }
+.prog-item { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; background: var(--surface-2); border-radius: 8px; font-size: 13px; }
+.prog-item.done { opacity: .6; }
+.prog-check { width: 20px; height: 20px; border-radius: 4px; border: 2px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.prog-check.checked { background: var(--green); border-color: var(--green); }
+.prog-check.checked::after { content: "✓"; color: #000; font-weight: 700; font-size: 12px; }
+.prog-edit { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 14px; padding: 0 4px; }
+.prog-edit:hover { color: var(--text); }
+.status-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.status-btn { padding: 8px 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text-dim); font-size: 11px; cursor: pointer; text-align: center; font-weight: 600; }
+.status-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.status-btn.active[data-s="mastered"] { background: var(--green); border-color: var(--green); }
+.status-btn.active[data-s="known"] { background: var(--blue); border-color: var(--blue); }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="subtitle" id="todayDate">—</div>
+  </div>
+  <div class="sync-status">
+    <span class="sync-dot" id="syncDot"></span>
+    <span id="syncText">offline</span>
+    <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="openSettings()">⚙️</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="today">Dziś</div>
+  <div class="tab" data-tab="goals">Cele</div>
+  <div class="tab" data-tab="diet">Dieta</div>
+  <div class="tab" data-tab="training">Trening</div>
+  <div class="tab" data-tab="health">Zdrowie</div>
+  <div class="tab" data-tab="habits">Nawyki</div>
+  <div class="tab" data-tab="skills">Skille</div>
+  <div class="tab" data-tab="studies">Studia</div>
+  <div class="tab" data-tab="trends">Trendy</div>
+</div>
+
+<!-- ============ DZIŚ ============ -->
+<div class="tab-section active" data-section="today">
+  <div class="grid">
+    <div class="card grid-full" id="todayCard">
+      <h2>Plan na dziś</h2>
+      <div class="today-hero" id="todayHero"></div>
+    </div>
+
+    <div class="card">
+      <h2>Makro <span class="badge" id="mealsCount">0 posiłków</span></h2>
+      <div class="macro-grid">
+        <div class="macro-item">
+          <div class="label">Kcal</div>
+          <div class="nums" id="todayKcal">0 <span class="of">/ 2750</span></div>
+          <div class="progress"><div class="progress-fill" id="kcalBar" style="width:0%"></div></div>
+        </div>
+        <div class="macro-item">
+          <div class="label">Białko</div>
+          <div class="nums" id="todayProtein">0g <span class="of">/ 158</span></div>
+          <div class="progress green"><div class="progress-fill" id="proteinBar" style="width:0%"></div></div>
+        </div>
+        <div class="macro-item">
+          <div class="label">Tłuszcz</div>
+          <div class="nums" id="todayFat">0g <span class="of">/ 78</span></div>
+          <div class="progress purple"><div class="progress-fill" id="fatBar" style="width:0%"></div></div>
+        </div>
+        <div class="macro-item">
+          <div class="label">Węgle</div>
+          <div class="nums" id="todayCarbs">0g <span class="of">/ 335</span></div>
+          <div class="progress blue"><div class="progress-fill" id="carbsBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-sm" onclick="switchTab('diet')">Dodaj posiłek →</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Sen ostatniej nocy</h2>
+      <div class="metric">
+        <span class="value" id="lastSleepHours">—</span>
+        <span class="unit">h</span>
+        <span class="delta zero" id="lastSleepQuality">jakość: —</span>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text-dim)" id="lastSleepDate">brak wpisu</div>
+      <div style="margin-top:10px"><button class="btn btn-sm" onclick="switchTab('health')">Dodaj rano →</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Waga</h2>
+      <div class="metric">
+        <span class="value" id="lastWeight">—</span>
+        <span class="unit">kg</span>
+        <span class="delta zero" id="weightDelta">vs start: —</span>
+      </div>
+      <canvas class="spark" id="weightSpark"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Pistol Squat <span class="badge" id="pistolBadge">—</span></h2>
+      <div class="metric"><span class="value" id="pistolStage" style="font-size:18px">—</span></div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:6px" id="pistolDesc"></div>
+      <div class="pistol-timeline" id="pistolTimeline"></div>
+    </div>
+
+    <div class="card">
+      <h2>Cykl biegowy <span class="badge" id="runCycleBadge">tydz. —</span></h2>
+      <div class="week-cycle" id="runCycle"></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-dim)" id="runDescription"></div>
+    </div>
+
+    <div class="card grid-wide">
+      <h2>Skille kalisteniczne <span class="badge" id="skillsCardBadge">—</span></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div class="macro-item" style="text-align:center"><div class="label">⭐+✓ Umiem</div><div class="nums" id="todayKnownCount" style="color:var(--green)">0</div></div>
+        <div class="macro-item" style="text-align:center"><div class="label">🔥 Trenuję</div><div class="nums" id="todayTrainingCount" style="color:var(--accent)">0</div></div>
+        <div class="macro-item" style="text-align:center"><div class="label">⬜ Do zrobienia</div><div class="nums" id="todayLockedCount" style="color:var(--text-dim)">0</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">🔥 Aktywnie trenuję</div>
+      <div id="todayTrainingList"></div>
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px">Najbliżej odblokowania</div>
+      <div id="todayNearList"></div>
+      <button class="btn btn-sm" style="margin-top:10px" onclick="switchTab('skills')">Wszystkie skille →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CELE ============ -->
+<div class="tab-section" data-section="goals">
+  <div class="grid">
+    <div class="card grid-full">
+      <h2>Cele 12-tygodniowe (do końca lipca 2026)</h2>
+      <div id="goalsList"></div>
+    </div>
+    <div class="card grid-full">
+      <h2>Aktualizuj wartości</h2>
+      <div class="field-row3" id="goalUpdates"></div>
+      <div style="margin-top:10px"><button class="btn" onclick="saveGoals()">Zapisz</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DIETA ============ -->
+<div class="tab-section" data-section="diet">
+  <div class="grid">
+    <div class="card">
+      <h2>Dodaj posiłek</h2>
+      <div class="field"><label>Co zjadłeś</label>
+        <input type="text" id="mealName" placeholder="np. Skyr Piątnica 330g + banan"></div>
+      <div class="field-row">
+        <div class="field"><label>Kcal</label><input type="number" id="mealKcal" inputmode="numeric"></div>
+        <div class="field"><label>Białko (g)</label><input type="number" id="mealProtein" inputmode="numeric"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Tłuszcz (g)</label><input type="number" id="mealFat" inputmode="numeric"></div>
+        <div class="field"><label>Węgle (g)</label><input type="number" id="mealCarbs" inputmode="numeric"></div>
+      </div>
+      <button class="btn" onclick="addMeal()" style="width:100%">+ Dodaj</button>
+      <div class="note" style="margin-top:10px">
+        <strong>Podpowiedź:</strong> WPC 30g = 116 kcal / 25g białka • Skyr Piątnica 330g = 165 kcal / 30g białka • Schab Pikok 100g = 121 kcal / 18g białka • Talerz u mamy „standard" = 700-900 kcal
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Dziś <span class="badge" id="dietToday">—</span></h2>
+      <div class="meal-list" id="mealsList"></div>
+      <div class="macro-grid">
+        <div class="macro-item">
+          <div class="label">Kcal pozostało</div>
+          <div class="nums" id="kcalRemaining">2750</div>
+        </div>
+        <div class="macro-item">
+          <div class="label">Białko brakuje</div>
+          <div class="nums" id="proteinRemaining">158g</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card grid-full">
+      <h2>Cele dietetyczne</h2>
+      <div class="field-row3">
+        <div class="field"><label>Kcal/dzień</label><input type="number" id="goalKcal" value="2750"></div>
+        <div class="field"><label>Białko (g)</label><input type="number" id="goalProtein" value="158"></div>
+        <div class="field"><label>Tłuszcz min (g)</label><input type="number" id="goalFat" value="78"></div>
+      </div>
+      <div class="field" style="max-width:200px"><label>Węgle (g)</label><input type="number" id="goalCarbs" value="335"></div>
+      <button class="btn btn-ghost btn-sm" onclick="saveDietGoals()">Zapisz cele</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TRENING ============ -->
+<div class="tab-section" data-section="training">
+  <div class="grid">
+    <div class="card grid-full">
+      <h2>Sesja <span class="badge" id="sessionBadge">—</span></h2>
+      <div class="field-row">
+        <div class="field"><label>Data</label><input type="date" id="sessionDate"></div>
+        <div class="field"><label>Typ sesji</label>
+          <select id="sessionType" onchange="loadWorkout()">
+            <option value="A">A — Push (wt)</option>
+            <option value="B">B — Pull (czw)</option>
+            <option value="C-A">C — Nogi tydzień A (Pistol+czworogłowy)</option>
+            <option value="C-B">C — Nogi tydzień B (tylna noga+glute)</option>
+            <option value="run">Bieg</option>
+          </select>
+        </div>
+      </div>
+      <div id="workoutBlock"></div>
+      <div style="margin-top:12px" class="btn-row">
+        <button class="btn" onclick="saveWorkout()">Zapisz trening</button>
+        <button class="btn btn-ghost" onclick="loadLastWorkout()">Wczytaj ostatni</button>
+      </div>
+    </div>
+
+    <div class="card grid-full">
+      <h2>Historia treningów</h2>
+      <div id="workoutHistory" class="meal-list" style="max-height:340px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ZDROWIE ============ -->
+<div class="tab-section" data-section="health">
+  <div class="grid">
+    <div class="card">
+      <h2>Pobudka — szybki wpis</h2>
+      <div class="field"><label>Data</label><input type="date" id="healthDate"></div>
+      <div class="field-row">
+        <div class="field"><label>Sen (h)</label><input type="number" step="0.1" id="sleepHours" inputmode="decimal" placeholder="7.5"></div>
+        <div class="field"><label>Jakość 1-10</label><input type="number" min="1" max="10" id="sleepQuality" inputmode="numeric"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Waga (kg)</label><input type="number" step="0.1" id="weight" inputmode="decimal"></div>
+        <div class="field"><label>HR spoczynkowe</label><input type="number" id="restHr" inputmode="numeric"></div>
+      </div>
+      <div class="field-row" id="bodyCompFields">
+        <div class="field"><label>Tkanka tłuszcz. (%)</label><input type="number" step="0.1" id="bodyFat" inputmode="decimal"></div>
+        <div class="field"><label>Mięśnie (kg)</label><input type="number" step="0.1" id="muscle" inputmode="decimal"></div>
+      </div>
+      <button class="btn" onclick="saveHealth()" style="width:100%">Zapisz pobudkę</button>
+    </div>
+
+    <div class="card">
+      <h2>Dane bazowe (6 maja 2026)</h2>
+      <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <tr><td style="padding:6px 0;color:var(--text-dim)">Wzrost</td><td style="text-align:right">179-180 cm</td></tr>
+        <tr><td style="padding:6px 0;color:var(--text-dim)">Waga start</td><td style="text-align:right;font-weight:600">82,0 kg</td></tr>
+        <tr><td style="padding:6px 0;color:var(--text-dim)">BMR</td><td style="text-align:right">~1850 kcal</td></tr>
+        <tr><td style="padding:6px 0;color:var(--text-dim)">TDEE</td><td style="text-align:right">~3000 kcal</td></tr>
+        <tr><td style="padding:6px 0;color:var(--text-dim)">HR max</td><td style="text-align:right">205 bpm</td></tr>
+        <tr><td style="padding:6px 0;color:var(--text-dim)">VO2max</td><td style="text-align:right">45,9</td></tr>
+        <tr><td style="padding:6px 0;color:var(--text-dim)">10 km PR</td><td style="text-align:right">54:29</td></tr>
+      </table>
+    </div>
+
+    <div class="card grid-full">
+      <h2>Strefy tętna (HR max 205)</h2>
+      <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <tr style="color:var(--text-dim);font-size:11px;text-transform:uppercase"><th style="text-align:left;padding:6px 0">Strefa</th><th style="text-align:left">%HR max</th><th style="text-align:left">BPM</th><th style="text-align:left">Cel</th></tr>
+        <tr><td style="padding:6px 0">Z1</td><td>50-60%</td><td>102-123</td><td style="color:var(--text-dim)">Spacer</td></tr>
+        <tr><td style="padding:6px 0">Z2</td><td>60-70%</td><td>123-143</td><td style="color:var(--green)">80% biegów tu</td></tr>
+        <tr><td style="padding:6px 0">Z3</td><td>70-80%</td><td>143-164</td><td style="color:var(--text-dim)">Tempo</td></tr>
+        <tr><td style="padding:6px 0">Z4</td><td>80-90%</td><td>164-184</td><td style="color:var(--text-dim)">Próg</td></tr>
+        <tr><td style="padding:6px 0">Z5</td><td>90-100%</td><td>184-205</td><td style="color:var(--text-dim)">VO2max</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ NAWYKI ============ -->
+<div class="tab-section" data-section="habits">
+  <div class="grid">
+    <div class="card grid-full">
+      <h2>Nawyki dnia <span class="badge" id="habitsDate">—</span></h2>
+      <div class="habit-grid" id="habitsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SKILLE ============ -->
+<div class="tab-section" data-section="skills">
+  <div class="grid">
+    <div class="card grid-full">
+      <h2>Skille kalisteniczne <span class="badge" id="skillsBadge">—</span></h2>
+
+      <div class="skill-stats">
+        <div class="skill-stat"><div class="num" id="statMastered" style="color:var(--green)">0</div><div class="lbl">Mistrzostwo</div></div>
+        <div class="skill-stat"><div class="num" id="statKnown" style="color:var(--blue)">0</div><div class="lbl">Umiem</div></div>
+        <div class="skill-stat"><div class="num" id="statTraining" style="color:var(--accent)">0</div><div class="lbl">Trenuję</div></div>
+        <div class="skill-stat"><div class="num" id="statLocked">0</div><div class="lbl">Do zrobienia</div></div>
+        <div class="skill-stat"><div class="num" id="statTotal">0</div><div class="lbl">Razem</div></div>
+      </div>
+
+      <div class="skill-filters" id="skillFilters">
+        <div class="skill-filter active" data-filter="all">Wszystkie</div>
+        <div class="skill-filter" data-filter="training">🔥 Trenuję</div>
+        <div class="skill-filter" data-filter="locked">⬜ Do zrobienia</div>
+        <div class="skill-filter" data-filter="known">✓ Umiem</div>
+        <div class="skill-filter" data-filter="push">Push</div>
+        <div class="skill-filter" data-filter="pull">Pull</div>
+        <div class="skill-filter" data-filter="legs">Legs</div>
+        <div class="skill-filter" data-filter="core">Core</div>
+        <div class="skill-filter" data-filter="static">Statyki</div>
+      </div>
+
+      <div id="skillsContainer"></div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="openAddSkill()">+ Dodaj własny skill</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetSkills()" style="color:var(--text-dim)">Przywróć listę kanoniczną</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SKILL DETAIL MODAL -->
+<div class="modal-overlay" id="skillModal">
+  <div class="skill-modal">
+    <button class="modal-close" onclick="closeSkillModal()">×</button>
+    <div class="cat-tag" id="skillModalCat">—</div>
+    <h3><span id="skillModalIcon"></span><span id="skillModalName"></span></h3>
+    <div style="color:var(--text-dim);font-size:13px;margin-top:4px" id="skillModalDesc"></div>
+
+    <div class="skill-modal-section">
+      <h4>Status</h4>
+      <div class="status-buttons" id="skillStatusButtons">
+        <div class="status-btn" data-s="locked">⬜ Do zrobienia</div>
+        <div class="status-btn" data-s="training">🔥 Trenuję</div>
+        <div class="status-btn" data-s="known">✓ Umiem</div>
+        <div class="status-btn" data-s="mastered">⭐ Mistrzostwo</div>
+      </div>
+    </div>
+
+    <div class="skill-modal-section">
+      <h4>Progresja</h4>
+      <div class="progression-list" id="progressionList"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="addProgStep()">+ Dodaj krok</button>
+    </div>
+
+    <div class="skill-modal-section">
+      <h4>Notatki / link do tutoriala</h4>
+      <textarea id="skillNotes" rows="3" placeholder="Co Ci nie wychodzi, link YouTube, technika..."></textarea>
+    </div>
+
+    <div class="skill-modal-section">
+      <h4>Aktualny progres (jedno zdanie)</h4>
+      <input type="text" id="skillCurrent" placeholder='np. "Pull Up +15kg × 5 czysto"'>
+    </div>
+
+    <div class="skill-modal-section">
+      <h4>Data odblokowania (kiedy zaliczyłeś pierwsze 3 czyste powt.)</h4>
+      <input type="date" id="skillUnlockDate">
+    </div>
+
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn" onclick="saveSkill()" style="flex:1">Zapisz</button>
+      <button class="btn btn-ghost" onclick="deleteSkill()" style="color:var(--red);border-color:var(--red)">🗑 Usuń</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CUSTOM SKILL MODAL -->
+<div class="modal-overlay" id="addSkillModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAddSkill()">×</button>
+    <h3>Dodaj własny skill</h3>
+    <div class="field"><label>Nazwa</label><input type="text" id="newSkillName" placeholder="np. 90 Degree Push Up"></div>
+    <div class="field"><label>Ikona (emoji)</label><input type="text" id="newSkillIcon" placeholder="💪" maxlength="2"></div>
+    <div class="field"><label>Kategoria</label>
+      <select id="newSkillCat">
+        <option value="push">Push</option>
+        <option value="pull">Pull</option>
+        <option value="legs">Legs</option>
+        <option value="core">Core</option>
+        <option value="static">Statyki</option>
+      </select>
+    </div>
+    <div class="field"><label>Opis (opcjonalnie)</label><textarea id="newSkillDesc" rows="2"></textarea></div>
+    <button class="btn" onclick="saveCustomSkill()" style="width:100%">Dodaj</button>
+  </div>
+</div>
+
+<!-- ============ STUDIA ============ -->
+<div class="tab-section" data-section="studies">
+  <div class="grid">
+    <!-- TOP: Średnia i ECTS na bieżąco -->
+    <div class="card grid-full">
+      <h2>Stomatologia PUMS — I rok <span class="badge" id="semBadge">sem. —</span></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:6px">
+        <div class="gpa-card-mini">
+          <div class="label">Średnia ważona</div>
+          <div class="gpa-big" id="gpaWeighted" style="font-size:30px">—</div>
+          <div class="label" id="gpaWeightedHelper">wg ECTS</div>
+        </div>
+        <div class="gpa-card-mini">
+          <div class="label">Średnia zwykła</div>
+          <div class="gpa-big" id="gpaSimple" style="font-size:30px">—</div>
+          <div class="label">arytmetyczna</div>
+        </div>
+        <div class="gpa-card-mini">
+          <div class="label">ECTS zaliczone</div>
+          <div class="gpa-big" id="ectsAccum" style="font-size:30px">—</div>
+          <div class="label" id="ectsAccumHelper">/ 60 (rok)</div>
+        </div>
+      </div>
+      <div class="progress green" style="margin-top:10px"><div class="progress-fill" id="ectsBar"></div></div>
+
+      <!-- Kalkulator celu -->
+      <div class="calc-box">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--accent-2);margin-bottom:8px">🎯 Kalkulator celu</div>
+        <div class="calc-row">
+          <div class="field" style="margin:0"><label>Średnia cel</label><input type="number" step="0.01" id="gpaGoal" inputmode="decimal" placeholder="4.50"></div>
+          <div class="field" style="margin:0"><label>Aktywny semestr</label>
+            <select id="currentSemester" onchange="renderStudies()">
+              <option value="1">Semestr 1 (zimowy)</option>
+              <option value="2">Semestr 2 (letni)</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-sm" onclick="saveStudiesMeta()">Zapisz</button>
+        <div class="calc-result" id="gradeCalc">—</div>
+      </div>
+    </div>
+
+    <!-- Przedmioty -->
+    <div class="card grid-full">
+      <h2>Przedmioty <span class="badge" id="subjectsBadge">—</span></h2>
+      <div class="skill-filters">
+        <div class="skill-filter active" data-sf="all">Wszystkie</div>
+        <div class="skill-filter" data-sf="active">Aktywny semestr</div>
+        <div class="skill-filter" data-sf="exam">Egzaminowe</div>
+        <div class="skill-filter" data-sf="pending">Niezakończone</div>
+        <div class="skill-filter" data-sf="passed">Zaliczone</div>
+      </div>
+      <div id="subjectsList"></div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="openAddSubject()">+ Dodaj przedmiot</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetSubjects()" style="color:var(--text-dim)">Przywróć listę PUMS</button>
+      </div>
+    </div>
+
+    <!-- Egzaminy/kolokwia z datami -->
+    <div class="card grid-full">
+      <h2>Nadchodzące egzaminy / kolokwia / deadliny</h2>
+      <div class="field-row">
+        <div class="field"><label>Nazwa</label><input type="text" id="examName" placeholder="np. Anatomia — kolokwium 3"></div>
+        <div class="field"><label>Data</label><input type="date" id="examDate"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Przedmiot (opcjonalnie)</label>
+          <select id="examSubject"><option value="">— bez przypisania —</option></select>
+        </div>
+        <div class="field"><label>Typ</label>
+          <select id="examType">
+            <option value="kolokwium">Kolokwium</option>
+            <option value="exam">Egzamin końcowy</option>
+            <option value="project">Projekt / praca</option>
+            <option value="deadline">Deadline</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" onclick="addExam()">+ Dodaj</button>
+      <div style="margin-top:14px"></div>
+      <div class="exam-list" id="examsList"></div>
+    </div>
+
+    <!-- Cele nauki -->
+    <div class="card grid-full">
+      <h2>Cele nauki (książki, kursy, projekty)</h2>
+      <div class="field-row">
+        <div class="field"><label>Cel</label><input type="text" id="studyGoalName" placeholder="np. Bochenek — t.1 do końca semestru"></div>
+        <div class="field"><label>Postęp 0-100%</label><input type="number" min="0" max="100" id="studyGoalProgress" inputmode="numeric"></div>
+      </div>
+      <button class="btn btn-sm" onclick="addStudyGoal()">+ Dodaj cel</button>
+      <div id="studyGoalsList" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SUBJECT DETAIL MODAL -->
+<div class="modal-overlay" id="subjectModal">
+  <div class="skill-modal">
+    <button class="modal-close" onclick="closeSubjectModal()">×</button>
+    <div class="cat-tag" id="subjectModalSemester">—</div>
+    <h3 id="subjectModalName">—</h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
+      <div class="field" style="margin:0"><label>ECTS</label><input type="number" id="subjEcts" inputmode="numeric"></div>
+      <div class="field" style="margin:0"><label>Forma</label>
+        <select id="subjForm">
+          <option value="E">Egzamin (E)</option>
+          <option value="ZO">Zaliczenie z oceną (ZO)</option>
+          <option value="Z">Zaliczenie (Z)</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0"><label>Semestr</label>
+        <select id="subjSemester">
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="skill-modal-section">
+      <h4>Ocena końcowa</h4>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px">
+        <button class="status-btn" data-g="2.0">2.0</button>
+        <button class="status-btn" data-g="3.0">3.0</button>
+        <button class="status-btn" data-g="3.5">3.5</button>
+        <button class="status-btn" data-g="4.0">4.0</button>
+        <button class="status-btn" data-g="4.5">4.5</button>
+        <button class="status-btn" data-g="5.0">5.0</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="clearFinalGrade()">Wyczyść (jeszcze niezaliczone)</button>
+    </div>
+
+    <div class="skill-modal-section">
+      <h4>Oceny cząstkowe / kolokwia <span style="text-transform:none;font-weight:400">(opcjonalnie — pomaga liczyć średnią w trakcie)</span></h4>
+      <div class="component-list" id="componentList"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addComponent()">+ Dodaj ocenę cząstkową</button>
+      <div id="componentAvg" style="margin-top:8px;font-size:12px;color:var(--text-dim)"></div>
+    </div>
+
+    <div class="skill-modal-section">
+      <h4>Notatki</h4>
+      <textarea id="subjNotes" rows="2" placeholder="np. wykładowca, podręczniki, dyżury..."></textarea>
+    </div>
+
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn" onclick="saveSubject()" style="flex:1">Zapisz</button>
+      <button class="btn btn-ghost" onclick="deleteSubject()" style="color:var(--red);border-color:var(--red)">🗑 Usuń</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CUSTOM SUBJECT MODAL -->
+<div class="modal-overlay" id="addSubjectModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAddSubject()">×</button>
+    <h3>Dodaj własny przedmiot</h3>
+    <div class="field"><label>Nazwa</label><input type="text" id="newSubjName" placeholder="np. Mikrobiologia jamy ustnej"></div>
+    <div class="field-row3">
+      <div class="field"><label>ECTS</label><input type="number" id="newSubjEcts" inputmode="numeric" value="3"></div>
+      <div class="field"><label>Forma</label>
+        <select id="newSubjForm">
+          <option value="E">Egzamin</option>
+          <option value="ZO">Zal. z oceną</option>
+          <option value="Z">Zaliczenie</option>
+        </select>
+      </div>
+      <div class="field"><label>Semestr</label>
+        <select id="newSubjSemester">
+          <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" onclick="saveCustomSubject()" style="width:100%">Dodaj</button>
+  </div>
+</div>
+
+<!-- ============ TRENDY ============ -->
+<div class="tab-section" data-section="trends">
+  <div class="grid">
+    <div class="card grid-full"><h2>Waga (ostatnie 60 dni)</h2><canvas class="spark" id="trendWeight" style="height:160px"></canvas></div>
+    <div class="card"><h2>Sen — godziny</h2><canvas class="spark" id="trendSleep" style="height:120px"></canvas></div>
+    <div class="card"><h2>Sen — jakość 1-10</h2><canvas class="spark" id="trendQuality" style="height:120px"></canvas></div>
+    <div class="card"><h2>Kalorie / dzień</h2><canvas class="spark" id="trendKcal" style="height:120px"></canvas></div>
+    <div class="card"><h2>Białko / dzień</h2><canvas class="spark" id="trendProtein" style="height:120px"></canvas></div>
+  </div>
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSettings()">×</button>
+    <h3>⚙️ Ustawienia</h3>
+
+    <h4 style="margin:14px 0 8px;font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Synchronizacja Firebase</h4>
+    <div class="note">
+      Aby synchronizować dane między telefonem a komputerem, wklej tutaj swoją konfigurację Firebase. Instrukcja założenia konta jest w pliku <strong>SETUP.md</strong> obok dashboardu (15 minut).
+    </div>
+    <div class="field"><label>Firebase config (JSON)</label>
+      <textarea id="firebaseConfig" rows="8" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
+    </div>
+    <div class="field"><label>User ID (dowolny napis identyfikujący Cię, np. „aleksander")</label>
+      <input type="text" id="firebaseUid" value="aleksander">
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveFirebaseConfig()">Zapisz i połącz</button>
+      <button class="btn btn-ghost" onclick="disconnectFirebase()">Rozłącz (tryb lokalny)</button>
+    </div>
+
+    <h4 style="margin:20px 0 8px;font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Dane lokalne</h4>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="exportData()">📤 Eksport JSON</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('importInput').click()">📥 Import JSON</button>
+      <input type="file" id="importInput" style="display:none" accept=".json" onchange="importData(event)">
+    </div>
+    <div class="note" style="margin-top:14px">
+      <strong>⚠️ Reset wszystkich danych:</strong> wymaga potwierdzenia.
+      <button class="btn btn-ghost btn-sm" style="margin-top:6px;color:var(--red);border-color:var(--red)" onclick="resetData()">Wyczyść wszystko</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK (loaded dynamically when configured) -->
+
+<script>
+/* ============================================================
+   STATE & STORAGE
+   ============================================================ */
+const STORAGE_KEY = 'dashboard_v1';
+const CONFIG_KEY = 'dashboard_firebase_v1';
+
+const DEFAULT_STATE = {
+  startDate: '2026-05-06',
+  startWeight: 82.0,
+  goals: {
+    weightTarget: 79.5,
+    pullUp: { current: 15, target: 25, unit: 'kg', name: 'Pull Up Weighted' },
+    ohp: { current: 40, target: 45, unit: 'kg', name: 'Overhead Press' },
+    row: { current: 50, target: 60, unit: 'kg', name: 'Bent Over Row' },
+    run10k: { current: 3269, target: 3180, unit: 's', name: 'Bieg 10 km (sek)' }, // 54:29 → cel <53:00
+    dragonFlag: { current: 6, target: 12, unit: 'reps', name: 'Dragon Flag' },
+    pistol: { current: 0, target: 3, unit: 'reps', name: 'Pełen Pistol Squat (każda noga)' }
+  },
+  dietGoals: { kcal: 2750, protein: 158, fat: 78, carbs: 335 },
+  meals: [], // {id, date, name, kcal, protein, fat, carbs}
+  workouts: [], // {id, date, type, exercises:[{name, sets:[{reps, weight}]}]}
+  health: [], // {date, sleepHours, sleepQuality, weight, restHr, bodyFat, muscle}
+  habits: {}, // {date: {sleep79: bool, noCaffeineAfter14: bool, noScreens30before: bool, creatine: bool, d3: bool, ankleMobility: bool}}
+  exams: [], // {id, name, date, type, ects, subjectId?}
+  studies: { gpa: null, gpaGoal: 4.5, ectsGot: null, ectsTotal: 360, currentSemester: 2, faculty: 'Stomatologia PUMS' },
+  studyGoals: [], // {id, name, progress}
+  subjects: null, // initialized from canonical list on first load — {id, name, ects, form (E/Z/ZO), semester, finalGrade, gradeComponents:[{name, grade, weight}], status, notes}
+  skills: null, // initialized from canonical list on first load
+  customSkills: [] // user-added on top of canonical
+};
+
+/* Kanoniczna lista przedmiotów I roku Stomatologii PUMS (ułożona orientacyjnie wg programu)
+   ECTS są szacunkowe — łatwo poprawisz w UI po zalogowaniu */
+const SUBJECTS_PUMS_STOM_Y1 = [
+  // Semestr 1 (zimowy)
+  { id: 'anatomia',           name: 'Anatomia prawidłowa człowieka', ects: 8, form: 'E',  semester: 1 },
+  { id: 'histologia',         name: 'Histologia z embriologią',      ects: 5, form: 'E',  semester: 1 },
+  { id: 'biofizyka',          name: 'Biofizyka',                     ects: 3, form: 'E',  semester: 1 },
+  { id: 'biologia',           name: 'Biologia medyczna',             ects: 3, form: 'ZO', semester: 1 },
+  { id: 'chemia',             name: 'Chemia ogólna i organiczna',    ects: 4, form: 'E',  semester: 1 },
+  { id: 'lacina',             name: 'Łacina medyczna',               ects: 2, form: 'ZO', semester: 1 },
+  { id: 'pierwsza_pomoc',     name: 'Pierwsza pomoc medyczna',       ects: 2, form: 'ZO', semester: 1 },
+  { id: 'psychologia',        name: 'Psychologia',                   ects: 2, form: 'ZO', semester: 1 },
+  { id: 'jezyk_obcy_s1',      name: 'Język obcy (s1)',               ects: 2, form: 'Z',  semester: 1 },
+  { id: 'wf_s1',              name: 'Wychowanie fizyczne (s1)',      ects: 1, form: 'Z',  semester: 1 },
+  { id: 'historia_med',       name: 'Historia medycyny / etyka',     ects: 1, form: 'ZO', semester: 1 },
+  // Semestr 2 (letni)
+  { id: 'anatomia_s2',        name: 'Anatomia człowieka (cd.)',       ects: 6, form: 'E',  semester: 2 },
+  { id: 'biochemia',          name: 'Biochemia z biologią molekularną', ects: 6, form: 'E', semester: 2 },
+  { id: 'fizjologia',         name: 'Fizjologia',                    ects: 4, form: 'E',  semester: 2 },
+  { id: 'propedeutyka_stom',  name: 'Propedeutyka stomatologii zachowawczej', ects: 3, form: 'ZO', semester: 2 },
+  { id: 'materialoznawstwo',  name: 'Materiałoznawstwo stomatologiczne', ects: 2, form: 'ZO', semester: 2 },
+  { id: 'mikrobiologia',      name: 'Mikrobiologia ogólna',          ects: 3, form: 'E',  semester: 2 },
+  { id: 'genetyka',           name: 'Genetyka medyczna',             ects: 2, form: 'ZO', semester: 2 },
+  { id: 'higiena_epi',        name: 'Higiena i epidemiologia',       ects: 2, form: 'ZO', semester: 2 },
+  { id: 'socjologia',         name: 'Socjologia medycyny',           ects: 1, form: 'Z',  semester: 2 },
+  { id: 'jezyk_obcy_s2',      name: 'Język obcy (s2)',               ects: 2, form: 'Z',  semester: 2 },
+  { id: 'wf_s2',              name: 'Wychowanie fizyczne (s2)',      ects: 1, form: 'Z',  semester: 2 },
+  { id: 'bhp',                name: 'BHP / Ochrona własności intelekt.', ects: 1, form: 'Z', semester: 2 }
+];
+
+const GRADE_SCALE = [2.0, 3.0, 3.5, 4.0, 4.5, 5.0];
+
+let state = loadLocal();
+let firebaseApp = null, firestore = null, firebaseConfig = null, firebaseUid = null;
+let saveTimer = null;
+let isCloudSyncing = false;
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const parsed = JSON.parse(raw);
+    return Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), parsed);
+  } catch(e) {
+    console.error('loadLocal failed', e);
+    return JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+}
+function saveLocal() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  scheduleCloudSave();
+}
+function scheduleCloudSave() {
+  if (!firestore) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(cloudSave, 800);
+}
+
+/* ============================================================
+   FIREBASE
+   ============================================================ */
+async function initFirebase() {
+  const stored = localStorage.getItem(CONFIG_KEY);
+  if (!stored) { setSyncStatus('local'); return; }
+  try {
+    const cfg = JSON.parse(stored);
+    firebaseConfig = cfg.config;
+    firebaseUid = cfg.uid || 'default';
+    await loadFirebaseSDK();
+    firebaseApp = window.firebase.initializeApp(firebaseConfig);
+    firestore = window.firebase.firestore();
+    setSyncStatus('online', 'sync...');
+    await cloudLoad();
+    setSyncStatus('online', 'sync ✓');
+  } catch(e) {
+    console.error('Firebase init failed', e);
+    setSyncStatus('error', 'błąd');
+    toast('Firebase: ' + e.message, 'error');
+  }
+}
+function loadFirebaseSDK() {
+  return new Promise((resolve, reject) => {
+    if (window.firebase) return resolve();
+    const s1 = document.createElement('script');
+    s1.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
+      s2.onload = resolve;
+      s2.onerror = reject;
+      document.head.appendChild(s2);
+    };
+    s1.onerror = reject;
+    document.head.appendChild(s1);
+  });
+}
+async function cloudLoad() {
+  if (!firestore || !firebaseUid) return;
+  try {
+    isCloudSyncing = true;
+    const doc = await firestore.collection('dashboard').doc(firebaseUid).get();
+    if (doc.exists) {
+      const remoteState = doc.data().state;
+      if (remoteState) {
+        state = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), remoteState);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderAll();
+      }
+    } else {
+      await cloudSave();
+    }
+  } catch(e) {
+    console.error('cloudLoad failed', e);
+    toast('Błąd ładowania z chmury: ' + e.message, 'error');
+  } finally {
+    isCloudSyncing = false;
+  }
+}
+async function cloudSave() {
+  if (!firestore || !firebaseUid) return;
+  try {
+    setSyncStatus('online', 'sync...');
+    await firestore.collection('dashboard').doc(firebaseUid).set({
+      state: state,
+      updatedAt: Date.now()
+    });
+    setSyncStatus('online', 'sync ✓');
+  } catch(e) {
+    console.error('cloudSave failed', e);
+    setSyncStatus('error', 'błąd');
+  }
+}
+function setSyncStatus(status, text) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  dot.classList.remove('online','local','error');
+  if (status === 'online') { dot.classList.add('online'); txt.textContent = text || 'online'; }
+  else if (status === 'local') { dot.classList.add('local'); txt.textContent = 'lokalnie'; }
+  else if (status === 'error') { dot.classList.add('error'); txt.textContent = text || 'błąd'; }
+}
+
+function saveFirebaseConfig() {
+  const cfgRaw = document.getElementById('firebaseConfig').value.trim();
+  const uid = document.getElementById('firebaseUid').value.trim() || 'default';
+  if (!cfgRaw) { toast('Wklej config Firebase', 'error'); return; }
+  try {
+    const cfg = JSON.parse(cfgRaw);
+    if (!cfg.projectId) throw new Error('Brakuje projectId');
+    localStorage.setItem(CONFIG_KEY, JSON.stringify({ config: cfg, uid }));
+    toast('Konfiguracja zapisana, łączę...', 'success');
+    closeSettings();
+    setTimeout(() => location.reload(), 500);
+  } catch(e) {
+    toast('Niepoprawny JSON: ' + e.message, 'error');
+  }
+}
+function disconnectFirebase() {
+  localStorage.removeItem(CONFIG_KEY);
+  toast('Odłączono Firebase, dane lokalnie', 'success');
+  closeSettings();
+  setTimeout(() => location.reload(), 500);
+}
+
+/* ============================================================
+   PLAN STATIC DATA (z Twojego dokumentu v3.0)
+   ============================================================ */
+const WORKOUTS = {
+  'A': {
+    name: 'Push (Wt)',
+    location: 'Siłownia',
+    exercises: [
+      { name: 'Dipy z obciążeniem ⭐', sets: 5, reps: '3-5', start: 10, fundament: true, key: 'dip' },
+      { name: 'Overhead Press (sztanga)', sets: 4, reps: '5', start: 35, key: 'ohp' },
+      { name: 'Dipy BW (objętość)', sets: 3, reps: '8-10' },
+      { name: 'Wyciskanie hantli skośne', sets: 3, reps: '8-10' },
+      { name: 'Lateral Raise (hantle)', sets: 3, reps: '12-15', start: 6 },
+      { name: 'Skull Crushers (EZ)', sets: 2, reps: '10' },
+      { name: 'Dragon Flag', sets: 3, reps: '6-10', key: 'dragonFlag' },
+      { name: 'L-sit hold (s)', sets: 3, reps: '20-40' }
+    ]
+  },
+  'B': {
+    name: 'Pull (Czw)',
+    location: 'Siłownia',
+    exercises: [
+      { name: 'Pull Up z obciążeniem ⭐', sets: 5, reps: '3-5', start: 15, fundament: true, key: 'pullUp' },
+      { name: 'Bent Over Row', sets: 4, reps: '6-8', start: 50, key: 'row' },
+      { name: 'Pull Up BW (objętość)', sets: 3, reps: '8-10' },
+      { name: 'Face Pull', sets: 3, reps: '12-15' },
+      { name: 'Biceps Curl na ławce (hantle)', sets: 3, reps: '10-12' },
+      { name: 'Hanging Leg Raises', sets: 3, reps: '10-12' },
+      { name: 'Plank (s)', sets: 3, reps: '45' }
+    ]
+  },
+  'C-A': {
+    name: 'Nogi tydzień A — czworogłowy + Pistol (Pt, dom)',
+    location: 'Dom',
+    exercises: [
+      { name: 'Pistol Squat progresja', sets: 4, reps: '5-8/nogę', fundament: true, key: 'pistol' },
+      { name: 'Bulgarian Split Squat', sets: 3, reps: '10/nogę' },
+      { name: 'Nordic Curl', sets: 3, reps: '3-6' },
+      { name: 'Wykroki w marszu (z hantlami)', sets: 3, reps: '12 kroków' },
+      { name: 'Łydki na schodzie', sets: 4, reps: '12-15' },
+      { name: 'Mobilność kostki (min)', sets: 1, reps: '5' }
+    ]
+  },
+  'C-B': {
+    name: 'Nogi tydzień B — tylna noga + glute (Pt, dom)',
+    location: 'Dom',
+    exercises: [
+      { name: 'Pistol Squat (objętość)', sets: 3, reps: '6-8/nogę', key: 'pistol' },
+      { name: 'Single Leg RDL (z hantlem)', sets: 3, reps: '10/nogę' },
+      { name: 'Glute Bridge One Leg', sets: 3, reps: '10/nogę' },
+      { name: 'Bulgarian Split Squat głęboki', sets: 3, reps: '10/nogę' },
+      { name: 'Łydki siedząc (z hantlami)', sets: 4, reps: '12-15' },
+      { name: 'Mobilność kostki (min)', sets: 1, reps: '5' }
+    ]
+  },
+  'run': {
+    name: 'Bieg',
+    location: 'Park / ulica',
+    exercises: [
+      { name: 'Dystans (km)', sets: 1, reps: '10' },
+      { name: 'Czas (min)', sets: 1, reps: '55' },
+      { name: 'Tempo (min/km — np. 5.30)', sets: 1, reps: '5.45' },
+      { name: 'HR średnie', sets: 1, reps: '135' }
+    ]
+  }
+};
+
+const WEEKLY_SCHEDULE = {
+  1: { type: 'run', label: 'Pon — Bieg 10 km Z2', desc: '55-60 min, park/ulica' },
+  2: { type: 'A', label: 'Wt — Trening A: Push', desc: '65-75 min, siłownia. Fundament: Dip z obciążeniem' },
+  3: { type: 'rest', label: 'Śr — Odpoczynek lub taniec/mobilność', desc: 'Co 2 tyg: mocniejszy bieg / interwały' },
+  4: { type: 'B', label: 'Czw — Trening B: Pull', desc: '65-75 min, siłownia. Fundament: Pull Up z obciążeniem' },
+  5: { type: 'C', label: 'Pt — NOGI w domu', desc: '50-60 min. Rotacja A/B + Pistol' },
+  6: { type: 'run', label: 'Sob — Bieg 10 km Z2', desc: '55-60 min, spokojny — sobota zawsze Z2' },
+  0: { type: 'rest', label: 'Niedz — Pełen odpoczynek', desc: '—' }
+};
+
+const PISTOL_PLAN = [
+  { week: 1, dates: '6-19 maja', stage: 'Box Pistol', desc: 'Siadasz na krzesło/box. Start 50 cm, kończysz na 30 cm' },
+  { week: 2, dates: '6-19 maja', stage: 'Box Pistol', desc: 'Siadasz na krzesło/box. Start 50 cm, kończysz na 30 cm' },
+  { week: 3, dates: '20 maja - 2 czerwca', stage: 'Assisted Pistol', desc: 'Trzymając się drzwi/słupa/drążka. Coraz lżejszy chwyt' },
+  { week: 4, dates: '20 maja - 2 czerwca', stage: 'Assisted Pistol', desc: 'Trzymając się drzwi/słupa/drążka. Coraz lżejszy chwyt' },
+  { week: 5, dates: '3-16 czerwca', stage: 'Counterweight Pistol', desc: 'Hantel 5-10 kg z przodu jako przeciwwaga' },
+  { week: 6, dates: '3-16 czerwca', stage: 'Counterweight Pistol', desc: 'Hantel 5-10 kg z przodu jako przeciwwaga' },
+  { week: 7, dates: '17-23 czerwca', stage: 'Negative Pistol', desc: 'Sam w dół powoli (3 sek), asystowany w górę' },
+  { week: 8, dates: '24-30 czerwca', stage: 'Full Pistol', desc: 'CEL: 3 powt. każda noga' }
+];
+
+const RUN_CYCLE = [
+  { code: 'A', name: 'Bazowy', desc: 'Pon: 10km Z2 (5:50-6:00/km). Sob: 10km tempo Z3 (5:20-5:30/km)' },
+  { code: 'B', name: 'Interwały', desc: 'Pon: 10km Z2. Sob: 6 × 800m @ 4:30/km z 2 min truchtu' },
+  { code: 'C', name: 'Długi', desc: 'Pon: 12-13km Z2. Sob: 10km Z3' },
+  { code: 'D', name: 'Test', desc: 'Pon: 10km Z2. Sob: TEST 5km na czas' }
+];
+
+/* Kanoniczna lista skilli kalistenicznych — progresje od podstaw do mistrzostwa */
+const SKILLS_CANONICAL = [
+  // ============ PUSH ============
+  { id: 'pushup', cat: 'push', icon: '💪', name: 'Push Up', desc: 'Klasyczna pompka — fundament', progressions: [
+    '5 powtórzeń z kolan','5 czystych powtórzeń','10 czystych powtórzeń','20 powtórzeń non-stop','30 powtórzeń non-stop'
+  ]},
+  { id: 'diamondpu', cat: 'push', icon: '💎', name: 'Diamond Push Up', desc: 'Pompka z dłońmi razem — triceps', progressions: [
+    'Diamond Push Up z kolan 5','3 powtórzenia','8 powtórzeń','15 powtórzeń'
+  ]},
+  { id: 'archerpu', cat: 'push', icon: '🏹', name: 'Archer Push Up', desc: 'Pompka z przeniesieniem ciężaru na jedną rękę', progressions: [
+    'Asymetryczna pompka (50/50)','Archer z ugiętą drugą ręką','Pełen Archer 3/nogę','Archer 5/stronę'
+  ]},
+  { id: 'pseudoplanche', cat: 'push', icon: '🤸', name: 'Pseudo Planche PU', desc: 'Pompka z dłońmi przy biodrach (palce w tył)', progressions: [
+    'Pseudo planche lean (statyka 10s)','5 pseudo planche push upów','10 powtórzeń z głębokim leanem'
+  ]},
+  { id: 'pikepu', cat: 'push', icon: '🐬', name: 'Pike Push Up', desc: 'Pompka w pozycji „szczupaka" — bary', progressions: [
+    'Pike Push Up stopy na ziemi 5','Pike Push Up stopy na ławce 5','Pike Push Up stopy na ścianie 5'
+  ]},
+  { id: 'wallhandstand', cat: 'push', icon: '🙃', name: 'Wall Handstand', desc: 'Stanie na rękach przy ścianie', progressions: [
+    'Wall walk do ściany 3x','Wall handstand twarzą do ściany 15s','Wall handstand 30s','Wall handstand 60s'
+  ]},
+  { id: 'hspu', cat: 'push', icon: '🔻', name: 'Handstand Push Up', desc: 'Pompka w staniu na rękach', progressions: [
+    'Pike Push Up stopy na ścianie 8','Negative HSPU (sam w dół) 3','HSPU przy ścianie 1 czysty','HSPU 3 powtórzenia','HSPU 5 powtórzeń'
+  ]},
+  { id: 'freehandstand', cat: 'push', icon: '🤾', name: 'Free Handstand', desc: 'Stanie na rękach bez wsparcia', progressions: [
+    'Wall handstand 30s','Free handstand 3s balans','Free handstand 10s','Free handstand 30s'
+  ]},
+  { id: 'dip', cat: 'push', icon: '⬇️', name: 'Dip', desc: 'Klasyczny dip na poręczach', progressions: [
+    'Dip negatywny (sam w dół) 5','Dip BW 5','Dip BW 10','Dip +10kg × 5','Dip +20kg × 5'
+  ]},
+  { id: 'ringdip', cat: 'push', icon: '⭕', name: 'Ring Dip', desc: 'Dip na kółkach — niestabilność', progressions: [
+    'Ring support hold 10s','Ring support hold 30s','Ring dip 1','Ring dip 5 czystych'
+  ]},
+  { id: 'planche', cat: 'push', icon: '✈️', name: 'Planche', desc: 'Statyka horyzontalna na prostych rękach', progressions: [
+    'Frog stand 10s','Tuck Planche 10s','Advanced Tuck Planche 10s','Straddle Planche 5s','Full Planche 3s'
+  ]},
+
+  // ============ PULL ============
+  { id: 'pullup', cat: 'pull', icon: '🆙', name: 'Pull Up', desc: 'Podciągnięcie nachwytem', progressions: [
+    'Negatywne podciągania 3','Australian pull up 8','Pull Up 1 czyste','Pull Up 5 czystych','Pull Up 10 czystych'
+  ]},
+  { id: 'chinup', cat: 'pull', icon: '🔼', name: 'Chin Up', desc: 'Podciągnięcie podchwytem', progressions: [
+    'Negatywne chin upy 3','Chin Up 1','Chin Up 5','Chin Up 10','Chin Up 15'
+  ]},
+  { id: 'widepullup', cat: 'pull', icon: '🦅', name: 'Wide Pull Up', desc: 'Szeroki chwyt — plecy', progressions: [
+    'Wide Pull Up 1','Wide Pull Up 5','Wide Pull Up 8'
+  ]},
+  { id: 'weightedpullup', cat: 'pull', icon: '🏋️', name: 'Weighted Pull Up', desc: 'Pull up z dodatkowym obciążeniem', progressions: [
+    'Pull Up +5kg × 5','Pull Up +10kg × 5','Pull Up +15kg × 5','Pull Up +25kg × 5','Pull Up +35kg × 5'
+  ]},
+  { id: 'archerpullup', cat: 'pull', icon: '🏹', name: 'Archer Pull Up', desc: 'Asymetryczne podciągnięcie', progressions: [
+    'Asymetryczne pull up (60/40)','Archer z ugiętą drugą ręką','Pełen Archer 1/stronę','Archer 3/stronę'
+  ]},
+  { id: 'muscleup', cat: 'pull', icon: '🚀', name: 'Muscle Up', desc: 'Pull Up + dip w jednym ruchu', progressions: [
+    'Wysokie pull up (do mostka) 3','False grip pull up 5','Negatywny muscle up 3','Kipping muscle up 1','Strict muscle up 1','Strict muscle up 3'
+  ]},
+  { id: 'oapullup', cat: 'pull', icon: '☝️', name: 'One Arm Pull Up', desc: 'Podciągnięcie jednorącz', progressions: [
+    'Archer pull up 5/stronę','Pull up z palcem drugiej ręki na ręczniku','OAP negatywny 3s','OAP 1 czyste','OAP 3 czyste'
+  ]},
+  { id: 'frontlever', cat: 'pull', icon: '🛸', name: 'Front Lever', desc: 'Pozioma sylwetka w wisie — twarzą w górę', progressions: [
+    'Tuck Front Lever 10s','Advanced Tuck Front Lever 10s','Straddle Front Lever 5s','Full Front Lever 5s','Front Lever Pull Up 1'
+  ]},
+  { id: 'backlever', cat: 'pull', icon: '🪂', name: 'Back Lever', desc: 'Pozioma sylwetka — twarzą w dół', progressions: [
+    'Tuck Back Lever 10s','Advanced Tuck Back Lever 10s','Straddle Back Lever 10s','Full Back Lever 5s'
+  ]},
+
+  // ============ LEGS ============
+  { id: 'squat', cat: 'legs', icon: '🦵', name: 'Bodyweight Squat', desc: 'Klasyczny przysiad', progressions: [
+    'BW Squat 10','BW Squat 25','BW Squat 50 non-stop'
+  ]},
+  { id: 'bulgarian', cat: 'legs', icon: '🇧🇬', name: 'Bulgarian Split Squat', desc: 'Przysiad z tylną nogą na podwyższeniu', progressions: [
+    'BSS BW 8/nogę','BSS z hantlami 10/nogę','BSS deep 10/nogę'
+  ]},
+  { id: 'pistol', cat: 'legs', icon: '🎯', name: 'Pistol Squat', desc: 'Przysiad jednonóż — Twój główny cel!', progressions: [
+    'Box Pistol (na krzesło 50cm)','Box Pistol (na krzesło 30cm)','Assisted Pistol (trzymając się)','Counterweight Pistol (z hantlem)','Negative Pistol (sam w dół 3s)','Full Pistol 1/nogę','Full Pistol 3/nogę','Full Pistol 5/nogę'
+  ]},
+  { id: 'shrimp', cat: 'legs', icon: '🦐', name: 'Shrimp Squat', desc: 'Przysiad jednonóż z drugą nogą zgiętą za sobą', progressions: [
+    'Assisted Shrimp 3/nogę','Beginner Shrimp 5/nogę','Intermediate Shrimp 5/nogę','Advanced Shrimp 3/nogę'
+  ]},
+  { id: 'sissysquat', cat: 'legs', icon: '🩰', name: 'Sissy Squat', desc: 'Przysiad z odchyleniem do tyłu — czworogłowy', progressions: [
+    'Assisted Sissy 5','Sissy Squat 8','Sissy z obciążeniem 8'
+  ]},
+  { id: 'nordiccurl', cat: 'legs', icon: '🪓', name: 'Nordic Curl', desc: 'Opuszczanie z nogami zablokowanymi — hamstringi', progressions: [
+    'Nordic 60° kontroli','Nordic 75° kontroli','Pełen Nordic 3','Nordic 6 czystych'
+  ]},
+  { id: 'jumpsquat', cat: 'legs', icon: '⚡', name: 'Jump Squat', desc: 'Wybicie z przysiadu — eksplozywność', progressions: [
+    'Jump Squat 5','Jump Squat 15','Tuck Jump 10','Box Jump 60cm'
+  ]},
+
+  // ============ CORE ============
+  { id: 'hollow', cat: 'core', icon: '🌙', name: 'Hollow Hold', desc: 'Statyka brzucha — pozycja „banana" na plecach', progressions: [
+    'Tuck Hollow Hold 20s','Hollow Hold z ugiętymi 30s','Pełen Hollow Hold 30s','Hollow Hold 60s'
+  ]},
+  { id: 'lsit', cat: 'core', icon: '📐', name: 'L-Sit', desc: 'Statyka — nogi proste przed sobą, na rękach', progressions: [
+    'Tuck L-Sit 10s','One-leg L-Sit 10s','L-Sit 15s','L-Sit 30s','L-Sit 45s'
+  ]},
+  { id: 'vsit', cat: 'core', icon: '✌️', name: 'V-Sit', desc: 'L-Sit ale nogi pod kątem 45-60°', progressions: [
+    'L-Sit 30s','High L-Sit 10s','V-Sit 5s','V-Sit 15s'
+  ]},
+  { id: 'dragonflag', cat: 'core', icon: '🐉', name: 'Dragon Flag', desc: 'Opuszczanie ciała poziomo z ławki — Bruce Lee', progressions: [
+    'Tuck Dragon Flag 3','Straddle Dragon Flag 3','Pełen Dragon Flag 3','Dragon Flag 6','Dragon Flag 12'
+  ]},
+  { id: 'humanflag', cat: 'core', icon: '🏳️', name: 'Human Flag', desc: 'Boczna flaga na pionowym słupie', progressions: [
+    'Vertical flag (boki ciała w pionie) 10s','Chamber flag (kolana zgięte) 5s','Straddle flag 3s','Full Human Flag 3s','Human Flag 10s'
+  ]},
+  { id: 'hlr', cat: 'core', icon: '🦿', name: 'Hanging Leg Raise', desc: 'Unoszenie nóg w wisie', progressions: [
+    'Hanging Knee Raise 10','HLR z lekko ugiętymi 8','Pełen HLR (proste nogi) 10','Toes to bar 10'
+  ]},
+  { id: 'plank', cat: 'core', icon: '🪵', name: 'Plank', desc: 'Deska — stabilizacja', progressions: [
+    'Plank 30s','Plank 60s','Plank 90s','Plank 2 min'
+  ]},
+
+  // ============ STATYKI ============
+  { id: 'crow', cat: 'static', icon: '🐦', name: 'Crow Pose', desc: 'Balans na rękach z kolanami opartymi o łokcie', progressions: [
+    'Crow z asystą stóp na ziemi 5s','Crow 5s','Crow 15s','Crow 30s'
+  ]},
+  { id: 'elbowlever', cat: 'static', icon: '💁', name: 'Elbow Lever', desc: 'Pozioma sylwetka na łokciach', progressions: [
+    'Elbow Lever na ugiętych łokciach 5s','Elbow Lever 10s','Elbow Lever 30s'
+  ]},
+  { id: 'germanhang', cat: 'static', icon: '🙃', name: 'German Hang', desc: 'Wisi do tyłu — mobilność barków', progressions: [
+    'Skin the cat 1x','Skin the cat 5x','German Hang 10s','German Hang 30s'
+  ]},
+];
+
+const HABITS_DEF = [
+  { id: 'sleep79',          label: '😴 Sen 7-9 h' },
+  { id: 'noCaffeineAfter14',label: '☕ Kawa nie po 14:00' },
+  { id: 'noScreens30before',label: '📱 Telefon stop 30 min przed snem' },
+  { id: 'creatine',         label: '💊 Kreatyna 5 g' },
+  { id: 'd3',               label: '☀️ D3 2000 IU (wrzesień-kwiecień)' },
+  { id: 'ankleMobility',    label: '🦵 Mobilność kostki 5 min' },
+  { id: 'protein150',       label: '🥩 Białko ≥150 g' },
+  { id: 'noKebabBaton',     label: '🚫 Brak dnia „kebab + baton"' }
+];
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+const todayISO = () => new Date().toISOString().split('T')[0];
+const fmtPL = d => new Date(d).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
+const daysSince = (d) => Math.floor((new Date() - new Date(d)) / 86400000);
+const weeksSince = (d) => Math.floor(daysSince(d) / 7);
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2400);
+}
+
+function fmtMMSS(seconds) {
+  const m = Math.floor(seconds/60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+/* ============================================================
+   RENDER — DZIŚ
+   ============================================================ */
+function renderToday() {
+  const now = new Date();
+  document.getElementById('todayDate').textContent = fmtPL(now);
+  document.getElementById('mealsCount').textContent = `${state.meals.filter(m=>m.date===todayISO()).length} posiłków`;
+  document.getElementById('habitsDate').textContent = fmtPL(now);
+  document.getElementById('dietToday').textContent = fmtPL(now);
+
+  // Today plan
+  const dow = now.getDay();
+  const sched = WEEKLY_SCHEDULE[dow];
+  const hero = document.getElementById('todayHero');
+  hero.innerHTML = `
+    <div class="day-name">${sched.label.split('—')[0].trim()}</div>
+    <div class="activity">${sched.label.split('—')[1].trim()}</div>
+    <div class="detail">${sched.desc}</div>
+    ${sched.type !== 'rest' ? `<button class="btn btn-sm" style="margin-top:14px" onclick="goToWorkout('${sched.type}')">Otwórz logger →</button>` : ''}
+  `;
+
+  // Macro today
+  renderMacroToday();
+
+  // Last sleep + weight
+  const lastH = [...state.health].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if (lastH) {
+    document.getElementById('lastSleepHours').textContent = lastH.sleepHours ?? '—';
+    document.getElementById('lastSleepQuality').textContent = 'jakość: ' + (lastH.sleepQuality ?? '—');
+    document.getElementById('lastSleepDate').textContent = lastH.date;
+    document.getElementById('lastWeight').textContent = lastH.weight ?? '—';
+    if (lastH.weight) {
+      const delta = (lastH.weight - state.startWeight).toFixed(1);
+      const el = document.getElementById('weightDelta');
+      el.textContent = `vs start: ${delta>=0?'+':''}${delta} kg`;
+      el.className = 'delta ' + (delta < 0 ? 'pos' : delta > 0 ? 'neg' : 'zero');
+    }
+  }
+  drawSpark('weightSpark', state.health.map(h => h.weight).filter(Boolean).slice(-30));
+
+  // Pistol
+  const start = new Date(state.startDate);
+  const wk = Math.min(8, Math.max(1, weeksSince(state.startDate) + 1));
+  const stage = PISTOL_PLAN[wk-1];
+  document.getElementById('pistolBadge').textContent = `tydz. ${wk}/8`;
+  document.getElementById('pistolStage').textContent = stage.stage;
+  document.getElementById('pistolDesc').textContent = stage.desc + ' • ' + stage.dates;
+  const tl = document.getElementById('pistolTimeline');
+  tl.innerHTML = PISTOL_PLAN.map((p,i) => {
+    const cls = (i+1) < wk ? 'done' : (i+1) === wk ? 'current' : '';
+    return `<div class="pistol-week ${cls}" title="${p.stage}"><span class="num">${i+1}</span>${p.stage.split(' ')[0]}</div>`;
+  }).join('');
+
+  // Skills overview
+  initSkillsIfNeeded();
+  const allSk = allSkillsList();
+  let knownC = 0, trainingC = 0, lockedC = 0;
+  const trainingSk = [], nearSk = [];
+  for (const sk of allSk) {
+    const s = state.skills[sk.id];
+    if (!s) continue;
+    if (s.status === 'known' || s.status === 'mastered') knownC++;
+    else if (s.status === 'training') { trainingC++; trainingSk.push({ sk, s }); }
+    else { lockedC++; }
+    if (s.status === 'locked' || !s.status) {
+      const done = (s.progressions || []).filter(p => p.done).length;
+      const total = (s.progressions || []).length;
+      if (total > 0) nearSk.push({ sk, s, done, total, ratio: done/total });
+    }
+  }
+  document.getElementById('skillsCardBadge').textContent = `${knownC}/${allSk.length} umiem`;
+  document.getElementById('todayKnownCount').textContent = knownC;
+  document.getElementById('todayTrainingCount').textContent = trainingC;
+  document.getElementById('todayLockedCount').textContent = lockedC;
+
+  const trList = document.getElementById('todayTrainingList');
+  if (trainingSk.length === 0) {
+    trList.innerHTML = '<div style="color:var(--text-faint);font-size:12px;padding:6px 0">Nic — ustaw status „🔥 Trenuję" na jakimś skillu</div>';
+  } else {
+    trList.innerHTML = trainingSk.slice(0,5).map(({sk, s}) => {
+      const done = (s.progressions || []).filter(p => p.done).length;
+      const total = (s.progressions || []).length;
+      return `
+        <div class="meal-item" style="grid-template-columns:auto 1fr auto;cursor:pointer" onclick="switchTab('skills');setTimeout(()=>openSkill('${sk.id}'),100)">
+          <div style="font-size:18px">${sk.icon}</div>
+          <div><div class="name">${escapeHtml(sk.name)}</div><div class="vals">${s.currentProgress ? escapeHtml(s.currentProgress) : `progresja ${done}/${total}`}</div></div>
+          <div style="color:var(--accent-2);font-size:11px">→</div>
+        </div>`;
+    }).join('');
+  }
+
+  // 3 najbliższe (najwięcej zaznaczonych progresji wśród locked)
+  nearSk.sort((a,b) => b.ratio - a.ratio || b.done - a.done);
+  const nrList = document.getElementById('todayNearList');
+  const top3 = nearSk.filter(n => n.done > 0).slice(0,3);
+  if (top3.length === 0) {
+    nrList.innerHTML = '<div style="color:var(--text-faint);font-size:12px;padding:6px 0">Zaznacz kroki progresji aby zobaczyć tutaj postępy</div>';
+  } else {
+    nrList.innerHTML = top3.map(({sk, s, done, total}) => `
+      <div class="meal-item" style="grid-template-columns:auto 1fr auto;cursor:pointer" onclick="switchTab('skills');setTimeout(()=>openSkill('${sk.id}'),100)">
+        <div style="font-size:18px">${sk.icon}</div>
+        <div><div class="name">${escapeHtml(sk.name)}</div><div class="vals">${done}/${total} kroków</div></div>
+        <div style="font-variant-numeric:tabular-nums;font-size:11px;color:var(--text-dim)">${Math.round(done/total*100)}%</div>
+      </div>`).join('');
+  }
+
+  // Run cycle
+  const cycleIdx = weeksSince(state.startDate) % 4;
+  const rc = RUN_CYCLE[cycleIdx];
+  document.getElementById('runCycleBadge').textContent = `tydz. ${rc.code}`;
+  document.getElementById('runDescription').textContent = rc.desc;
+  const rcEl = document.getElementById('runCycle');
+  rcEl.innerHTML = RUN_CYCLE.map((c,i) => `
+    <div class="cycle-week ${i===cycleIdx?'current':''}">
+      <span class="label">${c.code}</span>
+      <span class="name">${c.name}</span>
+    </div>
+  `).join('');
+}
+
+function goToWorkout(type) {
+  switchTab('training');
+  document.getElementById('sessionDate').value = todayISO();
+  // C is rotation — pick A or B based on which leg week we are
+  let useType = type;
+  if (type === 'C') {
+    const legCycle = Math.floor(weeksSince(state.startDate) / 1) % 2; // alternate weekly
+    useType = legCycle === 0 ? 'C-A' : 'C-B';
+  }
+  document.getElementById('sessionType').value = useType;
+  loadWorkout();
+}
+
+function renderMacroToday() {
+  const today = todayISO();
+  const todays = state.meals.filter(m => m.date === today);
+  const sum = todays.reduce((acc,m) => ({
+    kcal: acc.kcal + (m.kcal||0),
+    protein: acc.protein + (m.protein||0),
+    fat: acc.fat + (m.fat||0),
+    carbs: acc.carbs + (m.carbs||0)
+  }), {kcal:0,protein:0,fat:0,carbs:0});
+  const g = state.dietGoals;
+  document.getElementById('todayKcal').innerHTML = `${Math.round(sum.kcal)} <span class="of">/ ${g.kcal}</span>`;
+  document.getElementById('todayProtein').innerHTML = `${Math.round(sum.protein)}g <span class="of">/ ${g.protein}</span>`;
+  document.getElementById('todayFat').innerHTML = `${Math.round(sum.fat)}g <span class="of">/ ${g.fat}</span>`;
+  document.getElementById('todayCarbs').innerHTML = `${Math.round(sum.carbs)}g <span class="of">/ ${g.carbs}</span>`;
+  document.getElementById('kcalBar').style.width = Math.min(100, sum.kcal/g.kcal*100) + '%';
+  document.getElementById('proteinBar').style.width = Math.min(100, sum.protein/g.protein*100) + '%';
+  document.getElementById('fatBar').style.width = Math.min(100, sum.fat/g.fat*100) + '%';
+  document.getElementById('carbsBar').style.width = Math.min(100, sum.carbs/g.carbs*100) + '%';
+  document.getElementById('kcalRemaining').textContent = Math.max(0, g.kcal - Math.round(sum.kcal));
+  document.getElementById('proteinRemaining').textContent = Math.max(0, g.protein - Math.round(sum.protein)) + 'g';
+
+  // Meals list
+  const list = document.getElementById('mealsList');
+  if (todays.length === 0) {
+    list.innerHTML = '<div class="empty">Brak posiłków dzisiaj</div>';
+  } else {
+    list.innerHTML = todays.map(m => `
+      <div class="meal-item">
+        <div class="name">${escapeHtml(m.name)}</div>
+        <div class="vals">${m.kcal||0} kcal • ${m.protein||0}g B</div>
+        <button class="del" onclick="delMeal('${m.id}')">×</button>
+      </div>
+    `).join('');
+  }
+}
+
+/* ============================================================
+   RENDER — CELE
+   ============================================================ */
+function renderGoals() {
+  const list = document.getElementById('goalsList');
+  const updates = document.getElementById('goalUpdates');
+  const goals = state.goals;
+
+  // Weight goal (special)
+  const lastW = [...state.health].sort((a,b)=>b.date.localeCompare(a.date)).find(h => h.weight)?.weight ?? state.startWeight;
+  const weightProgress = Math.min(100, Math.max(0, ((state.startWeight - lastW) / (state.startWeight - goals.weightTarget)) * 100));
+  let html = `
+    <div class="goal-row">
+      <div><div class="name">⚖️ Waga</div><div class="target">cel: ${goals.weightTarget} kg • start: ${state.startWeight} kg</div></div>
+      <div class="current">${lastW.toFixed(1)} kg</div>
+      <div class="progress green"><div class="progress-fill" style="width:${weightProgress.toFixed(0)}%"></div></div>
+    </div>
+  `;
+
+  // Other goals
+  for (const [key, g] of Object.entries(goals)) {
+    if (key === 'weightTarget') continue;
+    let pct, displayCurrent, displayTarget;
+    if (key === 'run10k') {
+      // lower is better
+      const range = goals[key].current - goals[key].target;
+      pct = Math.min(100, Math.max(0, ((goals.run10k.current - g.current) / range) * 100));
+      // Actually we need to track latest 10k time — use g.current as updated
+      displayCurrent = fmtMMSS(g.current);
+      displayTarget = `cel: <${fmtMMSS(g.target)}`;
+    } else {
+      pct = Math.min(100, Math.max(0, (g.current / g.target) * 100));
+      displayCurrent = `${g.current} ${g.unit}`;
+      displayTarget = `cel: ${g.target} ${g.unit}`;
+    }
+    html += `
+      <div class="goal-row">
+        <div><div class="name">${g.name}</div><div class="target">${displayTarget}</div></div>
+        <div class="current">${displayCurrent}</div>
+        <div class="progress"><div class="progress-fill" style="width:${pct.toFixed(0)}%"></div></div>
+      </div>
+    `;
+  }
+  list.innerHTML = html;
+
+  // Update inputs
+  let updHtml = '';
+  for (const [key, g] of Object.entries(goals)) {
+    if (key === 'weightTarget') continue;
+    if (key === 'run10k') {
+      updHtml += `<div class="field"><label>${g.name}</label><input type="text" id="upd_${key}" value="${fmtMMSS(g.current)}" placeholder="MM:SS"></div>`;
+    } else {
+      updHtml += `<div class="field"><label>${g.name}</label><input type="number" step="0.5" id="upd_${key}" value="${g.current}" inputmode="decimal"></div>`;
+    }
+  }
+  updates.innerHTML = updHtml;
+}
+
+function saveGoals() {
+  for (const key of Object.keys(state.goals)) {
+    if (key === 'weightTarget') continue;
+    const el = document.getElementById('upd_' + key);
+    if (!el) continue;
+    if (key === 'run10k') {
+      const m = el.value.match(/^(\d+):(\d+)$/);
+      if (m) state.goals[key].current = parseInt(m[1])*60 + parseInt(m[2]);
+    } else {
+      state.goals[key].current = parseFloat(el.value) || 0;
+    }
+  }
+  saveLocal();
+  renderGoals();
+  toast('Cele zaktualizowane', 'success');
+}
+
+/* ============================================================
+   DIETA
+   ============================================================ */
+function addMeal() {
+  const name = document.getElementById('mealName').value.trim();
+  if (!name) { toast('Wpisz nazwę', 'error'); return; }
+  const meal = {
+    id: uid(),
+    date: todayISO(),
+    name,
+    kcal: parseFloat(document.getElementById('mealKcal').value) || 0,
+    protein: parseFloat(document.getElementById('mealProtein').value) || 0,
+    fat: parseFloat(document.getElementById('mealFat').value) || 0,
+    carbs: parseFloat(document.getElementById('mealCarbs').value) || 0
+  };
+  state.meals.push(meal);
+  saveLocal();
+  ['mealName','mealKcal','mealProtein','mealFat','mealCarbs'].forEach(id => document.getElementById(id).value = '');
+  renderMacroToday();
+  renderToday();
+  toast('Dodano: ' + name, 'success');
+}
+function delMeal(id) {
+  state.meals = state.meals.filter(m => m.id !== id);
+  saveLocal();
+  renderMacroToday();
+  renderToday();
+}
+function saveDietGoals() {
+  state.dietGoals = {
+    kcal: parseInt(document.getElementById('goalKcal').value) || 2750,
+    protein: parseInt(document.getElementById('goalProtein').value) || 158,
+    fat: parseInt(document.getElementById('goalFat').value) || 78,
+    carbs: parseInt(document.getElementById('goalCarbs')?.value) || 335
+  };
+  saveLocal();
+  renderMacroToday();
+  toast('Cele dietetyczne zapisane', 'success');
+}
+
+/* ============================================================
+   TRENING
+   ============================================================ */
+function loadWorkout() {
+  const type = document.getElementById('sessionType').value;
+  const w = WORKOUTS[type];
+  document.getElementById('sessionBadge').textContent = w.name + ' • ' + w.location;
+  const block = document.getElementById('workoutBlock');
+  block.innerHTML = w.exercises.map((ex, i) => {
+    const isWeighted = ex.start !== undefined;
+    const baseWeight = ex.start ?? '';
+    const setRows = Array.from({length: ex.sets}, (_,k) => {
+      if (isWeighted) {
+        return `
+          <div class="set-row" data-set-row="${i}-${k}">
+            <div class="set-num">${k+1}</div>
+            <div class="set-cell">
+              <input type="number" step="0.5" inputmode="decimal" data-ex="${i}" data-set-weight="${k}" placeholder="${baseWeight}" value="${baseWeight}">
+              <span class="unit">kg</span>
+            </div>
+            <div class="set-cell">
+              <input type="number" inputmode="numeric" data-ex="${i}" data-set-reps="${k}" placeholder="reps">
+              <span class="unit">×</span>
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="set-row" data-set-row="${i}-${k}">
+            <div class="set-num">${k+1}</div>
+            <div class="set-cell">
+              <input type="number" inputmode="numeric" data-ex="${i}" data-set-reps="${k}" placeholder="reps">
+              <span class="unit">${ex.name.toLowerCase().includes('hold') || ex.name.toLowerCase().includes('plank') || ex.name.toLowerCase().includes('(s)') ? 'sek' : 'reps'}</span>
+            </div>
+          </div>
+        `;
+      }
+    }).join('');
+
+    return `
+      <div class="exercise ${ex.fundament?'fundament':''}">
+        <div class="ex-head">
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-target">${ex.sets} × ${ex.reps}${isWeighted?' • start '+ex.start+'kg':''}</div>
+          </div>
+          ${isWeighted ? `<button class="btn btn-ghost btn-sm" onclick="fillSameWeight(${i})" title="Wypełnij wszystkie sety wagą z 1. seta">⚖️ wszystkie</button>` : ''}
+        </div>
+        <div class="sets ${isWeighted?'':'bw-only'}">
+          <div class="sets-head">
+            <span>#</span>
+            ${isWeighted ? '<span>Waga</span><span>Powt.</span>' : '<span>Powt.</span>'}
+          </div>
+          ${setRows}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Auto-bind: gdy user wpisze powtórzenia, podświetl set jako "done"
+  block.querySelectorAll('[data-set-reps]').forEach(input => {
+    input.addEventListener('input', e => {
+      const row = e.target.closest('.set-row');
+      if (e.target.value && parseInt(e.target.value) > 0) row.classList.add('done');
+      else row.classList.remove('done');
+    });
+  });
+}
+
+// Wypełnij wszystkie sety wagą z pierwszego seta (skrót — gdy nie zmieniasz wagi)
+function fillSameWeight(exIdx) {
+  const first = document.querySelector(`[data-ex="${exIdx}"][data-set-weight="0"]`);
+  if (!first || !first.value) { toast('Wpisz wagę w 1. secie', 'error'); return; }
+  document.querySelectorAll(`[data-ex="${exIdx}"][data-set-weight]`).forEach(inp => {
+    if (inp !== first) inp.value = first.value;
+  });
+}
+
+function saveWorkout() {
+  const date = document.getElementById('sessionDate').value || todayISO();
+  const type = document.getElementById('sessionType').value;
+  const w = WORKOUTS[type];
+  const exercises = w.exercises.map((ex, i) => {
+    const isWeighted = ex.start !== undefined;
+    const numSets = ex.sets;
+    // Build sets as array of { weight, reps }
+    const sets = [];
+    for (let k = 0; k < numSets; k++) {
+      const repsEl = document.querySelector(`[data-ex="${i}"][data-set-reps="${k}"]`);
+      const wEl = document.querySelector(`[data-ex="${i}"][data-set-weight="${k}"]`);
+      const reps = repsEl ? (parseInt(repsEl.value) || 0) : 0;
+      const weight = wEl ? (parseFloat(wEl.value) || null) : null;
+      sets.push({ reps, weight });
+    }
+    // Top weight for this exercise = max weight where reps > 0
+    const workingSets = sets.filter(s => s.reps > 0);
+    const topWeight = isWeighted && workingSets.length
+      ? Math.max(...workingSets.map(s => s.weight || 0))
+      : null;
+    return { name: ex.name, key: ex.key, weight: topWeight, sets };
+  });
+  const workout = { id: uid(), date, type, exercises };
+  state.workouts.push(workout);
+
+  // Auto-update goal current values
+  for (const ex of exercises) {
+    if (!ex.key || !state.goals[ex.key]) continue;
+    // For weighted lifts: take the top weight where reps >= 5 (working set quality)
+    if (['pullUp','ohp','row'].includes(ex.key)) {
+      const qualitySets = ex.sets.filter(s => s.reps >= 5 && s.weight);
+      if (qualitySets.length > 0) {
+        const top = Math.max(...qualitySets.map(s => s.weight));
+        if (top > state.goals[ex.key].current) state.goals[ex.key].current = top;
+      }
+    }
+    if (ex.key === 'pistol' || ex.key === 'dragonFlag') {
+      const maxReps = Math.max(0, ...ex.sets.map(s => s.reps || 0));
+      if (maxReps > state.goals[ex.key].current) state.goals[ex.key].current = maxReps;
+    }
+  }
+  saveLocal();
+  renderWorkoutHistory();
+  renderGoals();
+  toast('Trening zapisany', 'success');
+}
+
+function loadLastWorkout() {
+  const type = document.getElementById('sessionType').value;
+  const last = [...state.workouts].filter(w => w.type === type).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if (!last) { toast('Brak poprzedniego treningu tego typu', 'error'); return; }
+  last.exercises.forEach((ex, i) => {
+    (ex.sets || []).forEach((s, k) => {
+      // Backward compat: old sets were just numbers (reps)
+      const reps = (typeof s === 'object') ? s.reps : s;
+      const weight = (typeof s === 'object') ? s.weight : ex.weight;
+      const repsEl = document.querySelector(`[data-ex="${i}"][data-set-reps="${k}"]`);
+      const wEl = document.querySelector(`[data-ex="${i}"][data-set-weight="${k}"]`);
+      if (repsEl && reps !== undefined && reps !== null) {
+        repsEl.value = reps;
+        if (parseInt(reps) > 0) repsEl.closest('.set-row').classList.add('done');
+      }
+      if (wEl && weight) wEl.value = weight;
+    });
+  });
+  toast('Wczytano trening z ' + last.date, 'success');
+}
+
+function summarizeSets(sets) {
+  // sets: array of {reps, weight} OR (legacy) array of numbers
+  if (!sets || sets.length === 0) return '';
+  // detect legacy
+  const isLegacy = typeof sets[0] !== 'object';
+  if (isLegacy) return sets.filter(r => r > 0).join(', ');
+  // Group consecutive sets with same weight: "15kg × 5,5,5,5,5"
+  const parts = [];
+  let cur = null;
+  for (const s of sets) {
+    if (s.reps == null || s.reps === 0) continue;
+    if (cur && cur.weight === s.weight) {
+      cur.reps.push(s.reps);
+    } else {
+      if (cur) parts.push(cur);
+      cur = { weight: s.weight, reps: [s.reps] };
+    }
+  }
+  if (cur) parts.push(cur);
+  return parts.map(p => (p.weight ? `${p.weight}kg × ` : '') + p.reps.join(',')).join(' • ');
+}
+
+function renderWorkoutHistory() {
+  const list = document.getElementById('workoutHistory');
+  const sorted = [...state.workouts].sort((a,b)=>b.date.localeCompare(a.date)).slice(0, 30);
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="empty">Brak zapisanych treningów</div>';
+    return;
+  }
+  list.innerHTML = sorted.map(w => {
+    const wo = WORKOUTS[w.type];
+    const fundament = w.exercises.find(e => e.key && (e.key === 'pullUp' || e.key === 'dip' || e.key === 'pistol'));
+    const summary = fundament ? `${fundament.name}: ${summarizeSets(fundament.sets)}` : '';
+    return `
+      <div class="meal-item" style="grid-template-columns:auto 1fr auto">
+        <div class="vals" style="min-width:80px">${w.date}</div>
+        <div><div class="name">${wo?.name || w.type}</div><div class="vals">${escapeHtml(summary)}</div></div>
+        <button class="del" onclick="delWorkout('${w.id}')">×</button>
+      </div>
+    `;
+  }).join('');
+}
+function delWorkout(id) {
+  if (!confirm('Usunąć trening?')) return;
+  state.workouts = state.workouts.filter(w => w.id !== id);
+  saveLocal();
+  renderWorkoutHistory();
+}
+
+/* ============================================================
+   ZDROWIE
+   ============================================================ */
+function saveHealth() {
+  const date = document.getElementById('healthDate').value || todayISO();
+  const entry = {
+    date,
+    sleepHours: parseFloat(document.getElementById('sleepHours').value) || null,
+    sleepQuality: parseInt(document.getElementById('sleepQuality').value) || null,
+    weight: parseFloat(document.getElementById('weight').value) || null,
+    restHr: parseInt(document.getElementById('restHr').value) || null,
+    bodyFat: parseFloat(document.getElementById('bodyFat').value) || null,
+    muscle: parseFloat(document.getElementById('muscle').value) || null
+  };
+  // upsert
+  state.health = state.health.filter(h => h.date !== date);
+  state.health.push(entry);
+  saveLocal();
+  renderToday();
+  renderTrends();
+  toast('Pobudka zapisana', 'success');
+  ['sleepHours','sleepQuality','weight','restHr','bodyFat','muscle'].forEach(id => document.getElementById(id).value = '');
+}
+
+/* ============================================================
+   NAWYKI
+   ============================================================ */
+function renderHabits() {
+  const date = todayISO();
+  const today = state.habits[date] || {};
+  const list = document.getElementById('habitsList');
+  list.innerHTML = HABITS_DEF.map(h => {
+    const checked = today[h.id];
+    const streak = calcStreak(h.id);
+    return `
+      <div class="habit-row" onclick="toggleHabit('${h.id}')">
+        <div>
+          <div class="label">${h.label}</div>
+          ${streak > 0 ? `<div class="streak">🔥 streak: ${streak} dni</div>` : ''}
+        </div>
+        <div class="checkbox ${checked?'checked':''}"></div>
+      </div>
+    `;
+  }).join('');
+}
+function toggleHabit(id) {
+  const date = todayISO();
+  if (!state.habits[date]) state.habits[date] = {};
+  state.habits[date][id] = !state.habits[date][id];
+  saveLocal();
+  renderHabits();
+}
+function calcStreak(habitId) {
+  let streak = 0;
+  let d = new Date();
+  while (true) {
+    const iso = d.toISOString().split('T')[0];
+    if (state.habits[iso] && state.habits[iso][habitId]) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+    if (streak > 365) break;
+  }
+  return streak;
+}
+
+/* ============================================================
+   STUDIA
+   ============================================================ */
+function addExam() {
+  const name = document.getElementById('examName').value.trim();
+  const date = document.getElementById('examDate').value;
+  if (!name || !date) { toast('Nazwa i data wymagane', 'error'); return; }
+  state.exams.push({
+    id: uid(), name, date,
+    type: document.getElementById('examType').value,
+    subjectId: document.getElementById('examSubject').value || null
+  });
+  saveLocal();
+  ['examName','examDate'].forEach(id => document.getElementById(id).value = '');
+  renderStudies();
+  toast('Dodano', 'success');
+}
+function delExam(id) {
+  state.exams = state.exams.filter(e => e.id !== id);
+  saveLocal();
+  renderStudies();
+}
+function addStudyGoal() {
+  const name = document.getElementById('studyGoalName').value.trim();
+  if (!name) { toast('Wpisz nazwę celu', 'error'); return; }
+  state.studyGoals.push({
+    id: uid(), name,
+    progress: parseInt(document.getElementById('studyGoalProgress').value) || 0
+  });
+  saveLocal();
+  document.getElementById('studyGoalName').value = '';
+  document.getElementById('studyGoalProgress').value = '';
+  renderStudies();
+}
+function updateStudyGoal(id, val) {
+  const g = state.studyGoals.find(x => x.id === id);
+  if (g) { g.progress = parseInt(val) || 0; saveLocal(); renderStudies(); }
+}
+function delStudyGoal(id) {
+  state.studyGoals = state.studyGoals.filter(g => g.id !== id);
+  saveLocal();
+  renderStudies();
+}
+function saveStudiesMeta() {
+  state.studies = state.studies || {};
+  state.studies.gpaGoal = parseFloat(document.getElementById('gpaGoal').value) || null;
+  state.studies.currentSemester = parseInt(document.getElementById('currentSemester').value) || 2;
+  saveLocal();
+  renderStudies();
+  toast('Zapisano', 'success');
+}
+
+/* SUBJECTS */
+function initSubjectsIfNeeded() {
+  if (!state.subjects) {
+    state.subjects = {};
+    for (const sb of SUBJECTS_PUMS_STOM_Y1) {
+      state.subjects[sb.id] = { ...sb, finalGrade: null, gradeComponents: [], notes: '' };
+    }
+    saveLocal();
+  }
+}
+
+function allSubjects() {
+  // Return as array
+  initSubjectsIfNeeded();
+  return Object.values(state.subjects);
+}
+
+let subjectFilter = 'all';
+
+function renderStudies() {
+  initSubjectsIfNeeded();
+  const s = state.studies;
+  const curSem = s.currentSemester || 2;
+  document.getElementById('semBadge').textContent = 'sem. ' + curSem;
+  document.getElementById('currentSemester').value = curSem;
+  if (s.gpaGoal) document.getElementById('gpaGoal').value = s.gpaGoal;
+
+  const subjects = allSubjects();
+  // Compute weighted/simple GPA from passed subjects (with grade not null, not 2.0)
+  // We exclude Z (zaliczenie bez oceny) from average
+  const graded = subjects.filter(sb => sb.finalGrade != null && sb.form !== 'Z');
+  let weightedSum = 0, weightedTotal = 0;
+  let simpleSum = 0, simpleCount = 0;
+  let ectsAccum = 0;
+  for (const sb of graded) {
+    if (sb.finalGrade >= 3.0) {
+      ectsAccum += sb.ects || 0;
+    }
+    weightedSum += sb.finalGrade * (sb.ects || 0);
+    weightedTotal += sb.ects || 0;
+    simpleSum += sb.finalGrade;
+    simpleCount++;
+  }
+  // Add ECTS from Z passed
+  for (const sb of subjects) {
+    if (sb.form === 'Z' && sb.finalGrade === 'Z') ectsAccum += sb.ects || 0;
+  }
+
+  const gpaWeighted = weightedTotal ? weightedSum / weightedTotal : null;
+  const gpaSimple = simpleCount ? simpleSum / simpleCount : null;
+
+  document.getElementById('gpaWeighted').textContent = gpaWeighted ? gpaWeighted.toFixed(2) : '—';
+  document.getElementById('gpaSimple').textContent = gpaSimple ? gpaSimple.toFixed(2) : '—';
+  document.getElementById('gpaWeightedHelper').textContent = `${graded.length} ${graded.length === 1 ? 'ocena' : 'ocen'} • Σ ${weightedTotal} ECTS`;
+
+  document.getElementById('ectsAccum').textContent = ectsAccum;
+  // ECTS rok 1 = ~60
+  const yearTotal = 60;
+  document.getElementById('ectsAccumHelper').textContent = `/ ${yearTotal} (rok)`;
+  document.getElementById('ectsBar').style.width = Math.min(100, (ectsAccum / yearTotal) * 100) + '%';
+
+  // Grade calculator
+  renderGradeCalc(gpaWeighted, weightedSum, weightedTotal, subjects, curSem);
+
+  // Subjects list
+  renderSubjectsList(subjects);
+
+  // Exams (with subject names)
+  renderExamsList();
+
+  // Subject dropdown for exam form
+  const subjSelect = document.getElementById('examSubject');
+  if (subjSelect) {
+    const cur = subjSelect.value;
+    subjSelect.innerHTML = '<option value="">— bez przypisania —</option>' +
+      subjects.sort((a,b)=>(a.semester-b.semester)||a.name.localeCompare(b.name)).map(sb =>
+        `<option value="${sb.id}">${escapeHtml(sb.name)} (sem.${sb.semester})</option>`
+      ).join('');
+    subjSelect.value = cur;
+  }
+
+  // Subject filter chips
+  document.querySelectorAll('[data-sf]').forEach(c => {
+    c.classList.toggle('active', c.dataset.sf === subjectFilter);
+    c.onclick = () => { subjectFilter = c.dataset.sf; renderStudies(); };
+  });
+
+  // Study goals
+  const sgList = document.getElementById('studyGoalsList');
+  if (state.studyGoals.length === 0) {
+    sgList.innerHTML = '<div class="empty">Brak celów nauki</div>';
+  } else {
+    sgList.innerHTML = state.studyGoals.map(g => `
+      <div class="meal-item" style="grid-template-columns:1fr auto auto;flex-direction:column;align-items:stretch;display:block;padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="name">${escapeHtml(g.name)}</div>
+          <button class="del" onclick="delStudyGoal('${g.id}')">×</button>
+        </div>
+        <div class="progress" style="margin-top:8px"><div class="progress-fill" style="width:${g.progress}%"></div></div>
+        <input type="range" min="0" max="100" value="${g.progress}" oninput="updateStudyGoal('${g.id}',this.value)" style="width:100%;margin-top:6px">
+      </div>
+    `).join('');
+  }
+}
+
+function renderSubjectsList(subjects) {
+  const curSem = state.studies.currentSemester || 2;
+  let filtered = subjects.slice();
+  if (subjectFilter === 'active') filtered = filtered.filter(s => s.semester === curSem);
+  else if (subjectFilter === 'exam') filtered = filtered.filter(s => s.form === 'E');
+  else if (subjectFilter === 'pending') filtered = filtered.filter(s => s.finalGrade == null);
+  else if (subjectFilter === 'passed') filtered = filtered.filter(s => (typeof s.finalGrade === 'number' && s.finalGrade >= 3.0) || s.finalGrade === 'Z');
+
+  filtered.sort((a,b) => (a.semester - b.semester) || -((b.ects||0) - (a.ects||0)) || a.name.localeCompare(b.name));
+
+  document.getElementById('subjectsBadge').textContent = filtered.length + ' / ' + subjects.length;
+
+  const list = document.getElementById('subjectsList');
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">Brak przedmiotów</div>';
+    return;
+  }
+
+  // Group by semester
+  const grouped = {};
+  for (const sb of filtered) {
+    if (!grouped[sb.semester]) grouped[sb.semester] = [];
+    grouped[sb.semester].push(sb);
+  }
+  let html = '';
+  for (const sem of Object.keys(grouped).sort((a,b)=>a-b)) {
+    html += `<div class="skill-cat-head" style="margin-top:12px"><span>Semestr ${sem}</span><span>${grouped[sem].length} przedmiotów</span></div>`;
+    for (const sb of grouped[sem]) {
+      const passed = (typeof sb.finalGrade === 'number' && sb.finalGrade >= 3.0) || sb.finalGrade === 'Z';
+      const failed = sb.finalGrade === 2.0;
+      const cls = passed ? 'passed' : failed ? 'failed' : (sb.gradeComponents && sb.gradeComponents.length ? 'in-progress' : '');
+
+      const compCount = (sb.gradeComponents || []).length;
+      const compPassed = (sb.gradeComponents || []).filter(c => c.grade >= 3.0).length;
+      const compFailed = (sb.gradeComponents || []).filter(c => c.grade === 2.0).length;
+
+      const gradeDisplay = sb.finalGrade === 'Z'
+        ? '<span class="grade-pill grade-5">ZAL</span>'
+        : (typeof sb.finalGrade === 'number'
+          ? `<span class="grade-pill grade-${String(sb.finalGrade).replace('.','-')}">${sb.finalGrade.toFixed(1)}</span>`
+          : '<span class="subj-grade empty">—</span>');
+
+      const compDots = compCount > 0
+        ? `<div class="subj-progress-mini">${(sb.gradeComponents || []).map(c => `<div class="${c.grade >= 3.0 ? 'pass' : c.grade === 2.0 ? 'fail' : 'has'}"></div>`).join('')}</div>`
+        : '';
+
+      html += `
+        <div class="subject-card ${cls}" onclick="openSubject('${sb.id}')">
+          <div class="subj-row">
+            <div>
+              <div class="subj-name">${escapeHtml(sb.name)}</div>
+              <div class="subj-meta">
+                <span class="tag">${sb.ects} ECTS</span>
+                <span class="tag">${sb.form}</span>
+                ${compCount > 0 ? `<span>${compPassed}/${compCount} kolokwiów zal.</span>` : ''}
+              </div>
+            </div>
+            <div>${gradeDisplay}</div>
+            <div style="color:var(--text-faint);font-size:18px">→</div>
+          </div>
+          ${compDots}
+        </div>
+      `;
+    }
+  }
+  list.innerHTML = html;
+}
+
+function renderExamsList() {
+  const list = document.getElementById('examsList');
+  const sorted = [...state.exams].sort((a,b)=>a.date.localeCompare(b.date));
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="empty">Brak egzaminów. Dodaj pierwszy ↑</div>';
+    return;
+  }
+  list.innerHTML = sorted.map(e => {
+    const days = Math.ceil((new Date(e.date) - new Date()) / 86400000);
+    const cls = days <= 3 ? 'urgent' : days <= 14 ? 'soon' : '';
+    const daysTxt = days < 0 ? `${Math.abs(days)} dni temu` : days === 0 ? 'dziś' : `${days} dni`;
+    const subj = e.subjectId && state.subjects[e.subjectId];
+    return `
+      <div class="exam-item">
+        <div class="countdown ${cls}">${daysTxt}</div>
+        <div>
+          <div class="name">${escapeHtml(e.name)}</div>
+          <div class="meta">${e.date} • ${e.type}${subj ? ` • ${escapeHtml(subj.name)} (${subj.ects} ECTS)` : ''}</div>
+        </div>
+        <button class="del" onclick="delExam('${e.id}')">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderGradeCalc(gpaWeighted, weightedSum, weightedTotal, subjects, curSem) {
+  const goal = state.studies.gpaGoal;
+  const calcBox = document.getElementById('gradeCalc');
+  if (!goal) {
+    calcBox.innerHTML = '<span style="color:var(--text-dim)">Wpisz średnią cel powyżej, aby zobaczyć kalkulator</span>';
+    return;
+  }
+  // Przedmioty pozostałe = niezaliczone i z formą E/ZO (czyli wpływające na średnią)
+  const remaining = subjects.filter(s => s.finalGrade == null && s.form !== 'Z');
+  const remainingECTS = remaining.reduce((sum, s) => sum + (s.ects || 0), 0);
+
+  if (remainingECTS === 0) {
+    calcBox.innerHTML = gpaWeighted
+      ? `Wszystkie przedmioty zaliczone. Twoja średnia ważona: <strong>${gpaWeighted.toFixed(2)}</strong> (cel: ${goal.toFixed(2)})`
+      : 'Brak ocenionych przedmiotów. Dodaj oceny w przedmiotach.';
+    return;
+  }
+
+  // potrzebna_średnia_na_resztę = (cel * (ECTS_już + ECTS_pozostałe) - suma_obecna) / ECTS_pozostałe
+  const totalECTS = weightedTotal + remainingECTS;
+  const neededSum = goal * totalECTS - weightedSum;
+  const neededAvg = neededSum / remainingECTS;
+
+  let interpretation = '';
+  if (neededAvg > 5.0) {
+    interpretation = `<span style="color:var(--red)"><strong>Cel ${goal.toFixed(2)} nieosiągalny w tym roku</strong> — musiałbyś dostać średnio ${neededAvg.toFixed(2)} z pozostałych przedmiotów, a maksymalna ocena to 5.0.</span>`;
+  } else if (neededAvg < 3.0) {
+    interpretation = `<span style="color:var(--green)"><strong>Cel ${goal.toFixed(2)} już praktycznie osiągnięty</strong> — nawet ze średnią 3.0 z pozostałych wciąż masz cel.</span>`;
+  } else {
+    const grade = neededAvg <= 3.0 ? '3.0' : neededAvg <= 3.5 ? '3.5' : neededAvg <= 4.0 ? '4.0' : neededAvg <= 4.5 ? '4.5' : '5.0';
+    interpretation = `Aby osiągnąć średnią <strong>${goal.toFixed(2)}</strong>, na pozostałych przedmiotach (${remainingECTS} ECTS) potrzebujesz średnio <strong style="color:var(--accent-2)">${neededAvg.toFixed(2)}</strong> — czyli mniej-więcej oceny <strong>${grade}</strong> wszędzie.`;
+  }
+
+  calcBox.innerHTML = `
+    <div style="margin-bottom:6px">Obecna ważona: <strong>${gpaWeighted ? gpaWeighted.toFixed(2) : '—'}</strong> z ${weightedTotal} ECTS. Pozostało: <strong>${remainingECTS} ECTS</strong>.</div>
+    ${interpretation}
+  `;
+}
+
+let currentSubjectId = null;
+
+function openSubject(id) {
+  initSubjectsIfNeeded();
+  const sb = state.subjects[id];
+  if (!sb) return;
+  currentSubjectId = id;
+
+  document.getElementById('subjectModalSemester').textContent = `Semestr ${sb.semester} • forma: ${sb.form}`;
+  document.getElementById('subjectModalName').textContent = sb.name;
+  document.getElementById('subjEcts').value = sb.ects || '';
+  document.getElementById('subjForm').value = sb.form || 'E';
+  document.getElementById('subjSemester').value = sb.semester || 1;
+  document.getElementById('subjNotes').value = sb.notes || '';
+
+  // Final grade buttons
+  document.querySelectorAll('#subjectModal [data-g]').forEach(btn => {
+    const g = parseFloat(btn.dataset.g);
+    btn.classList.toggle('active', sb.finalGrade === g);
+    btn.onclick = () => {
+      document.querySelectorAll('#subjectModal [data-g]').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+    };
+  });
+
+  renderComponents(sb.gradeComponents || []);
+
+  document.getElementById('subjectModal').classList.add('show');
+}
+
+function renderComponents(components) {
+  const list = document.getElementById('componentList');
+  list.innerHTML = '';
+  if (!components || components.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-faint);font-size:12px;padding:6px 4px">Brak ocen cząstkowych</div>';
+  }
+  (components || []).forEach((c, i) => {
+    const row = document.createElement('div');
+    row.className = 'component-row';
+    row.innerHTML = `
+      <input type="text" data-comp-name="${i}" value="${escapeHtml(c.name || '')}" placeholder="np. Kolokwium 1">
+      <select data-comp-grade="${i}">
+        <option value="">—</option>
+        ${GRADE_SCALE.map(g => `<option value="${g}" ${c.grade === g ? 'selected' : ''}>${g.toFixed(1)}</option>`).join('')}
+      </select>
+      <input type="number" step="0.5" data-comp-weight="${i}" value="${c.weight || 1}" title="Waga w średniej cząstkowej" style="text-align:center">
+      <button class="prog-edit" data-comp-del="${i}">×</button>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-comp-del]').forEach(b => b.onclick = e => {
+    const i = parseInt(e.currentTarget.dataset.compDel);
+    const sb = state.subjects[currentSubjectId];
+    sb.gradeComponents.splice(i, 1);
+    renderComponents(sb.gradeComponents);
+  });
+  // Update avg display
+  updateComponentAvg(components);
+  // bind on input
+  list.querySelectorAll('[data-comp-grade], [data-comp-weight]').forEach(el => el.addEventListener('input', () => {
+    const sb = state.subjects[currentSubjectId];
+    document.querySelectorAll('#componentList .component-row').forEach((r, i) => {
+      if (!sb.gradeComponents[i]) return;
+      const grade = parseFloat(r.querySelector('[data-comp-grade]').value) || null;
+      const weight = parseFloat(r.querySelector('[data-comp-weight]').value) || 1;
+      sb.gradeComponents[i].grade = grade;
+      sb.gradeComponents[i].weight = weight;
+    });
+    updateComponentAvg(sb.gradeComponents);
+  }));
+}
+
+function updateComponentAvg(components) {
+  const valid = (components || []).filter(c => c.grade);
+  if (valid.length === 0) {
+    document.getElementById('componentAvg').textContent = '';
+    return;
+  }
+  const sum = valid.reduce((s,c) => s + c.grade * (c.weight || 1), 0);
+  const total = valid.reduce((s,c) => s + (c.weight || 1), 0);
+  const avg = sum / total;
+  document.getElementById('componentAvg').innerHTML = `Średnia cząstkowa (ważona): <strong>${avg.toFixed(2)}</strong> z ${valid.length} ocen`;
+}
+
+function addComponent() {
+  const sb = state.subjects[currentSubjectId];
+  if (!sb.gradeComponents) sb.gradeComponents = [];
+  sb.gradeComponents.push({ name: 'Kolokwium ' + (sb.gradeComponents.length + 1), grade: null, weight: 1 });
+  renderComponents(sb.gradeComponents);
+}
+
+function clearFinalGrade() {
+  document.querySelectorAll('#subjectModal [data-g]').forEach(x => x.classList.remove('active'));
+}
+
+function saveSubject() {
+  const sb = state.subjects[currentSubjectId];
+  sb.ects = parseInt(document.getElementById('subjEcts').value) || 0;
+  sb.form = document.getElementById('subjForm').value;
+  sb.semester = parseInt(document.getElementById('subjSemester').value) || 1;
+  sb.notes = document.getElementById('subjNotes').value;
+  // final grade
+  const activeBtn = document.querySelector('#subjectModal [data-g].active');
+  sb.finalGrade = activeBtn ? parseFloat(activeBtn.dataset.g) : (sb.form === 'Z' ? null : null);
+  // Read component names from DOM
+  document.querySelectorAll('#componentList [data-comp-name]').forEach(input => {
+    const i = parseInt(input.dataset.compName);
+    if (sb.gradeComponents[i]) sb.gradeComponents[i].name = input.value;
+  });
+  saveLocal();
+  closeSubjectModal();
+  renderStudies();
+  toast('Zapisano', 'success');
+}
+
+function deleteSubject() {
+  if (!confirm('Usunąć przedmiot? (Możesz go potem przywrócić przyciskiem „Przywróć listę PUMS")')) return;
+  delete state.subjects[currentSubjectId];
+  saveLocal();
+  closeSubjectModal();
+  renderStudies();
+  toast('Usunięto', 'success');
+}
+
+function closeSubjectModal() {
+  document.getElementById('subjectModal').classList.remove('show');
+  currentSubjectId = null;
+}
+
+function openAddSubject() {
+  document.getElementById('newSubjName').value = '';
+  document.getElementById('newSubjEcts').value = 3;
+  document.getElementById('newSubjForm').value = 'E';
+  document.getElementById('newSubjSemester').value = state.studies.currentSemester || 2;
+  document.getElementById('addSubjectModal').classList.add('show');
+}
+function closeAddSubject() { document.getElementById('addSubjectModal').classList.remove('show'); }
+
+function saveCustomSubject() {
+  const name = document.getElementById('newSubjName').value.trim();
+  if (!name) { toast('Nazwa wymagana', 'error'); return; }
+  const id = 'subj_' + uid();
+  state.subjects[id] = {
+    id, name,
+    ects: parseInt(document.getElementById('newSubjEcts').value) || 1,
+    form: document.getElementById('newSubjForm').value,
+    semester: parseInt(document.getElementById('newSubjSemester').value) || 1,
+    finalGrade: null, gradeComponents: [], notes: ''
+  };
+  saveLocal();
+  closeAddSubject();
+  renderStudies();
+  toast('Dodano przedmiot', 'success');
+}
+
+function resetSubjects() {
+  if (!confirm('Przywrócić kanoniczną listę przedmiotów I roku PUMS Stomatologia? To dodaje brakujące przedmioty z bazy. NIE zmieni istniejących ocen i notatek.')) return;
+  for (const sb of SUBJECTS_PUMS_STOM_Y1) {
+    if (!state.subjects[sb.id]) {
+      state.subjects[sb.id] = { ...sb, finalGrade: null, gradeComponents: [], notes: '' };
+    }
+  }
+  saveLocal();
+  renderStudies();
+  toast('Przywrócono', 'success');
+}
+
+/* ============================================================
+   TRENDY (mini-charts on canvas, no library)
+   ============================================================ */
+function renderTrends() {
+  drawSpark('trendWeight', state.health.map(h=>h.weight).filter(Boolean).slice(-60), { yLabel: 'kg' });
+  drawSpark('trendSleep', state.health.map(h=>h.sleepHours).filter(Boolean).slice(-30), { yLabel: 'h' });
+  drawSpark('trendQuality', state.health.map(h=>h.sleepQuality).filter(Boolean).slice(-30), { yLabel: '1-10', yMin: 0, yMax: 10 });
+
+  // kcal & protein per day
+  const dayMap = {};
+  for (const m of state.meals) {
+    if (!dayMap[m.date]) dayMap[m.date] = { kcal: 0, protein: 0 };
+    dayMap[m.date].kcal += m.kcal||0;
+    dayMap[m.date].protein += m.protein||0;
+  }
+  const days = Object.keys(dayMap).sort().slice(-30);
+  drawSpark('trendKcal', days.map(d => dayMap[d].kcal), { yLabel: 'kcal', target: state.dietGoals.kcal });
+  drawSpark('trendProtein', days.map(d => dayMap[d].protein), { yLabel: 'g', target: state.dietGoals.protein });
+}
+
+function drawSpark(canvasId, data, opts={}) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  c.width = rect.width * dpr;
+  c.height = rect.height * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,rect.width,rect.height);
+  if (!data || data.length === 0) {
+    ctx.fillStyle = '#555'; ctx.font = '12px system-ui'; ctx.fillText('brak danych', 8, rect.height/2);
+    return;
+  }
+  const min = opts.yMin ?? Math.min(...data) * 0.98;
+  const max = opts.yMax ?? Math.max(...data) * 1.02;
+  const range = (max - min) || 1;
+  const w = rect.width;
+  const h = rect.height;
+  const padL = 4, padR = 4, padT = 8, padB = 14;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+  // line
+  ctx.beginPath();
+  data.forEach((v,i) => {
+    const x = padL + (data.length === 1 ? innerW/2 : (i / (data.length-1)) * innerW);
+    const y = padT + innerH - ((v - min) / range) * innerH;
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#ff6a00';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // fill
+  ctx.lineTo(padL + innerW, padT + innerH);
+  ctx.lineTo(padL, padT + innerH);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,106,0,0.12)';
+  ctx.fill();
+  // target line
+  if (opts.target !== undefined) {
+    const ty = padT + innerH - ((opts.target - min) / range) * innerH;
+    ctx.beginPath();
+    ctx.setLineDash([4,4]);
+    ctx.moveTo(padL, ty); ctx.lineTo(padL+innerW, ty);
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  // labels
+  ctx.fillStyle = '#888'; ctx.font = '10px system-ui';
+  ctx.fillText(min.toFixed(1) + (opts.yLabel||''), 4, h-2);
+  ctx.fillText(max.toFixed(1) + (opts.yLabel||''), 4, padT+8);
+  // last value big
+  if (data.length) {
+    ctx.fillStyle = '#ededed'; ctx.font = '12px system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(data[data.length-1].toFixed(1), w-4, padT+10);
+    ctx.textAlign = 'left';
+  }
+}
+
+/* ============================================================
+   SKILLS
+   ============================================================ */
+function initSkillsIfNeeded() {
+  // First-time: populate skills from canonical
+  if (!state.skills) {
+    state.skills = {};
+    for (const sk of SKILLS_CANONICAL) {
+      state.skills[sk.id] = {
+        status: sk.id === 'pistol' ? 'training' : 'locked', // Pistol już trenujesz wg planu
+        currentProgress: '',
+        notes: '',
+        unlockDate: null,
+        progressions: sk.progressions.map(p => ({ text: p, done: false }))
+      };
+    }
+    saveLocal();
+  }
+  // Make sure newly added canonical skills also exist
+  for (const sk of SKILLS_CANONICAL) {
+    if (!state.skills[sk.id]) {
+      state.skills[sk.id] = {
+        status: 'locked',
+        currentProgress: '',
+        notes: '',
+        unlockDate: null,
+        progressions: sk.progressions.map(p => ({ text: p, done: false }))
+      };
+    }
+  }
+}
+
+function allSkillsList() {
+  // canonical + custom
+  return [...SKILLS_CANONICAL, ...(state.customSkills || [])];
+}
+
+let skillFilterActive = 'all';
+
+function renderSkills() {
+  initSkillsIfNeeded();
+  const skills = allSkillsList();
+
+  // stats
+  let mastered = 0, known = 0, training = 0, locked = 0;
+  for (const sk of skills) {
+    const s = state.skills[sk.id];
+    if (!s) continue;
+    if (s.status === 'mastered') mastered++;
+    else if (s.status === 'known') known++;
+    else if (s.status === 'training') training++;
+    else locked++;
+  }
+  document.getElementById('statMastered').textContent = mastered;
+  document.getElementById('statKnown').textContent = known;
+  document.getElementById('statTraining').textContent = training;
+  document.getElementById('statLocked').textContent = locked;
+  document.getElementById('statTotal').textContent = skills.length;
+  document.getElementById('skillsBadge').textContent = `${mastered + known} / ${skills.length} umiem`;
+
+  // filter
+  const filter = skillFilterActive;
+  const filtered = skills.filter(sk => {
+    const s = state.skills[sk.id] || {};
+    if (filter === 'all') return true;
+    if (filter === 'training') return s.status === 'training';
+    if (filter === 'locked') return s.status === 'locked' || !s.status;
+    if (filter === 'known') return s.status === 'known' || s.status === 'mastered';
+    return sk.cat === filter;
+  });
+
+  // group by category
+  const cats = { push: 'Push', pull: 'Pull', legs: 'Legs', core: 'Core', static: 'Statyki' };
+  const grouped = {};
+  for (const sk of filtered) {
+    if (!grouped[sk.cat]) grouped[sk.cat] = [];
+    grouped[sk.cat].push(sk);
+  }
+
+  const container = document.getElementById('skillsContainer');
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty">Brak skilli pasujących do filtra</div>';
+    return;
+  }
+  let html = '';
+  for (const [catKey, catName] of Object.entries(cats)) {
+    if (!grouped[catKey]) continue;
+    html += `<div class="skill-cat">
+      <div class="skill-cat-head"><span>${catName}</span><span>${grouped[catKey].length}</span></div>
+      <div class="skill-list-grid">`;
+    for (const sk of grouped[catKey]) {
+      const s = state.skills[sk.id] || { status: 'locked', progressions: [] };
+      const done = (s.progressions || []).filter(p => p.done).length;
+      const total = (s.progressions || []).length;
+      const status = s.status || 'locked';
+      const pillMap = {
+        locked: '<span class="skill-status-pill pill-locked">⬜ Do zrobienia</span>',
+        training: '<span class="skill-status-pill pill-training">🔥 Trenuję</span>',
+        known: '<span class="skill-status-pill pill-known">✓ Umiem</span>',
+        mastered: '<span class="skill-status-pill pill-mastered">⭐ Mistrzostwo</span>'
+      };
+      const subline = s.currentProgress
+        ? escapeHtml(s.currentProgress)
+        : `Progresja: ${done}/${total} kroków`;
+      html += `
+        <div class="skill-card s-${status}" onclick="openSkill('${sk.id}')">
+          <div class="skill-card-row">
+            <div class="skill-icon">${sk.icon}</div>
+            <div>
+              <div class="skill-name">${escapeHtml(sk.name)}</div>
+              <div class="skill-progress-line">${subline}</div>
+            </div>
+            <div>${pillMap[status]}</div>
+          </div>
+        </div>`;
+    }
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+// Filter clicks
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('skill-filter')) {
+    document.querySelectorAll('.skill-filter').forEach(f => f.classList.remove('active'));
+    e.target.classList.add('active');
+    skillFilterActive = e.target.dataset.filter;
+    renderSkills();
+  }
+});
+
+let currentSkillId = null;
+
+function openSkill(id) {
+  initSkillsIfNeeded();
+  const sk = allSkillsList().find(s => s.id === id);
+  if (!sk) return;
+  currentSkillId = id;
+  const s = state.skills[id] || { status: 'locked', progressions: [], currentProgress: '', notes: '', unlockDate: null };
+  const isCustom = state.customSkills.some(c => c.id === id);
+
+  const catNames = { push: 'Push', pull: 'Pull', legs: 'Legs', core: 'Core', static: 'Statyki' };
+  document.getElementById('skillModalCat').textContent = catNames[sk.cat] + (isCustom ? ' • własny skill' : '');
+  document.getElementById('skillModalIcon').textContent = sk.icon;
+  document.getElementById('skillModalName').textContent = sk.name;
+  document.getElementById('skillModalDesc').textContent = sk.desc || '';
+
+  // Status buttons
+  document.querySelectorAll('#skillStatusButtons .status-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.s === s.status);
+    b.onclick = () => {
+      document.querySelectorAll('#skillStatusButtons .status-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      // Auto-set unlock date when crossing from locked/training to known
+      const newStatus = b.dataset.s;
+      if ((newStatus === 'known' || newStatus === 'mastered') && !document.getElementById('skillUnlockDate').value) {
+        document.getElementById('skillUnlockDate').value = todayISO();
+      }
+    };
+  });
+
+  // Progressions
+  renderProgressionList(s.progressions);
+
+  document.getElementById('skillNotes').value = s.notes || '';
+  document.getElementById('skillCurrent').value = s.currentProgress || '';
+  document.getElementById('skillUnlockDate').value = s.unlockDate || '';
+
+  document.getElementById('skillModal').classList.add('show');
+}
+
+function renderProgressionList(progressions) {
+  const list = document.getElementById('progressionList');
+  list.innerHTML = '';
+  (progressions || []).forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'prog-item' + (p.done ? ' done' : '');
+    row.innerHTML = `
+      <div class="prog-check ${p.done ? 'checked' : ''}" data-i="${i}"></div>
+      <input type="text" value="${escapeHtml(p.text)}" data-prog-text="${i}" style="background:transparent;border:none;padding:4px 2px;color:var(--text);font-size:13px${p.done ? ';text-decoration:line-through' : ''}">
+      <button class="prog-edit" data-del="${i}" title="usuń">×</button>
+    `;
+    list.appendChild(row);
+  });
+  // bind events
+  list.querySelectorAll('.prog-check').forEach(c => c.onclick = (e) => {
+    const i = parseInt(e.currentTarget.dataset.i);
+    const sk = allSkillsList().find(s => s.id === currentSkillId);
+    const s = state.skills[currentSkillId];
+    s.progressions[i].done = !s.progressions[i].done;
+    renderProgressionList(s.progressions);
+  });
+  list.querySelectorAll('[data-del]').forEach(b => b.onclick = (e) => {
+    const i = parseInt(e.currentTarget.dataset.del);
+    const s = state.skills[currentSkillId];
+    s.progressions.splice(i, 1);
+    renderProgressionList(s.progressions);
+  });
+}
+
+function addProgStep() {
+  const s = state.skills[currentSkillId];
+  if (!s.progressions) s.progressions = [];
+  s.progressions.push({ text: 'Nowy krok progresji', done: false });
+  renderProgressionList(s.progressions);
+}
+
+function saveSkill() {
+  const s = state.skills[currentSkillId];
+  const activeBtn = document.querySelector('#skillStatusButtons .status-btn.active');
+  s.status = activeBtn ? activeBtn.dataset.s : 'locked';
+  s.notes = document.getElementById('skillNotes').value;
+  s.currentProgress = document.getElementById('skillCurrent').value;
+  s.unlockDate = document.getElementById('skillUnlockDate').value || null;
+  // Read edited progression texts
+  document.querySelectorAll('#progressionList [data-prog-text]').forEach(input => {
+    const i = parseInt(input.dataset.progText);
+    if (s.progressions[i]) s.progressions[i].text = input.value;
+  });
+  saveLocal();
+  closeSkillModal();
+  renderSkills();
+  renderToday();
+  toast('Skill zapisany', 'success');
+}
+
+function deleteSkill() {
+  const isCustom = state.customSkills.some(c => c.id === currentSkillId);
+  if (!isCustom) {
+    if (!confirm('To skill kanoniczny. Zamiast usuwać, możesz ustawić status na „Do zrobienia" i odfiltrować. Naprawdę usunąć z bazy?')) return;
+    delete state.skills[currentSkillId];
+    saveLocal();
+    closeSkillModal();
+    renderSkills();
+    toast('Usunięto (przywrócisz przyciskiem „Przywróć listę kanoniczną")', 'success');
+    return;
+  }
+  if (!confirm('Usunąć ten skill?')) return;
+  state.customSkills = state.customSkills.filter(c => c.id !== currentSkillId);
+  delete state.skills[currentSkillId];
+  saveLocal();
+  closeSkillModal();
+  renderSkills();
+  toast('Usunięto', 'success');
+}
+
+function closeSkillModal() {
+  document.getElementById('skillModal').classList.remove('show');
+  currentSkillId = null;
+}
+
+function openAddSkill() {
+  document.getElementById('newSkillName').value = '';
+  document.getElementById('newSkillIcon').value = '💪';
+  document.getElementById('newSkillCat').value = 'push';
+  document.getElementById('newSkillDesc').value = '';
+  document.getElementById('addSkillModal').classList.add('show');
+}
+function closeAddSkill() { document.getElementById('addSkillModal').classList.remove('show'); }
+
+function saveCustomSkill() {
+  const name = document.getElementById('newSkillName').value.trim();
+  if (!name) { toast('Nazwa wymagana', 'error'); return; }
+  const id = 'custom_' + uid();
+  const skill = {
+    id, cat: document.getElementById('newSkillCat').value,
+    icon: document.getElementById('newSkillIcon').value || '💪',
+    name, desc: document.getElementById('newSkillDesc').value, progressions: []
+  };
+  state.customSkills.push(skill);
+  state.skills[id] = { status: 'locked', currentProgress: '', notes: '', unlockDate: null, progressions: [] };
+  saveLocal();
+  closeAddSkill();
+  renderSkills();
+  toast('Dodano skill', 'success');
+}
+
+function resetSkills() {
+  if (!confirm('Przywrócić kanoniczną listę skilli? To dodaje brakujące skille z bazy, ale NIE usunie Twoich własnych i NIE zmieni statusów istniejących.')) return;
+  // Just re-add missing ones
+  for (const sk of SKILLS_CANONICAL) {
+    if (!state.skills[sk.id]) {
+      state.skills[sk.id] = {
+        status: 'locked', currentProgress: '', notes: '', unlockDate: null,
+        progressions: sk.progressions.map(p => ({ text: p, done: false }))
+      };
+    }
+  }
+  saveLocal();
+  renderSkills();
+  toast('Przywrócono listę', 'success');
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.toggle('active', s.dataset.section === name));
+  if (name === 'trends') renderTrends();
+  if (name === 'today') renderToday();
+  if (name === 'goals') renderGoals();
+  if (name === 'diet') renderMacroToday();
+  if (name === 'training') { document.getElementById('sessionDate').value = todayISO(); loadWorkout(); renderWorkoutHistory(); }
+  if (name === 'health') document.getElementById('healthDate').value = todayISO();
+  if (name === 'habits') renderHabits();
+  if (name === 'skills') renderSkills();
+  if (name === 'studies') renderStudies();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+/* ============================================================
+   SETTINGS / IMPORT / EXPORT
+   ============================================================ */
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('show');
+  // populate existing config if any
+  const stored = localStorage.getItem(CONFIG_KEY);
+  if (stored) {
+    try {
+      const obj = JSON.parse(stored);
+      document.getElementById('firebaseConfig').value = JSON.stringify(obj.config, null, 2);
+      document.getElementById('firebaseUid').value = obj.uid || 'aleksander';
+    } catch(e) {}
+  }
+}
+function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `dashboard-${todayISO()}.json`; a.click();
+  URL.revokeObjectURL(url);
+  toast('Wyeksportowano', 'success');
+}
+function importData(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const obj = JSON.parse(e.target.result);
+      if (!confirm('Zastąpić wszystkie dane danymi z pliku?')) return;
+      state = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), obj);
+      saveLocal();
+      renderAll();
+      closeSettings();
+      toast('Zaimportowano', 'success');
+    } catch(err) { toast('Błąd: ' + err.message, 'error'); }
+  };
+  reader.readAsText(file);
+}
+function resetData() {
+  if (!confirm('Naprawdę wyczyścić WSZYSTKIE dane?')) return;
+  if (!confirm('Ostatnie potwierdzenie. To nieodwracalne.')) return;
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  saveLocal();
+  renderAll();
+  closeSettings();
+  toast('Wyczyszczono', 'success');
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function renderAll() {
+  renderToday();
+  renderGoals();
+  renderMacroToday();
+  loadWorkout();
+  renderWorkoutHistory();
+  renderHabits();
+  renderSkills();
+  renderStudies();
+  renderTrends();
+}
+window.addEventListener('load', () => {
+  document.getElementById('sessionDate').value = todayISO();
+  document.getElementById('healthDate').value = todayISO();
+  document.getElementById('goalKcal').value = state.dietGoals.kcal;
+  document.getElementById('goalProtein').value = state.dietGoals.protein;
+  document.getElementById('goalFat').value = state.dietGoals.fat;
+  document.getElementById('goalCarbs').value = state.dietGoals.carbs;
+  renderAll();
+  initFirebase();
+});
+window.addEventListener('resize', () => {
+  // re-draw sparks on resize
+  setTimeout(renderTrends, 100);
+  drawSpark('weightSpark', state.health.map(h => h.weight).filter(Boolean).slice(-30));
+});
+</script>
+</body>
+</html>
